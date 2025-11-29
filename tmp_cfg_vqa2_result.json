@@ -1,0 +1,13 @@
+{
+  "metrics": {
+    "accuracy": 0.33,
+    "abs_error": 1.0
+  },
+  "stats": {
+    "num_anno_valid": 3,
+    "num_anno_invalid": 0,
+    "num_model_valid": 3,
+    "num_model_invalid": 0,
+    "num_paired": 3
+  }
+}

@@ -1,0 +1,2 @@
+{"sample_id": "1", "task": "VQA1", "model_output": "Yes", "source": "test_image1.jpg"}
+{"sample_id": "2", "task": "VQA2", "model_output": "3", "source": "test_image2.jpg"}

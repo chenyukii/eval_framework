@@ -1,0 +1,24 @@
+# 数据处理
+json5==0.9.14
+base64io==1.0.3
+pandas==1.5.3
+# 指标计算
+pycocotools==2.0.6
+rouge-score==0.1.2
+nltk==3.8.1
+# 可视化
+matplotlib==3.7.1
+seaborn==0.12.2
+pillow==9.4.0
+# 其他
+loguru==0.7.0
+tqdm==4.65.0
+torch==1.13.1  # 若需GPU支持，需额外安装对应CUDA版本
+
+numpy
+shapely
+scikit-learn
+nltk
+scipy
+# optional but recommended for accurate CIDEr:
+pycocoevalcap

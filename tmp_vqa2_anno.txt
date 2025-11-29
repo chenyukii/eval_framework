@@ -1,0 +1,3 @@
+{"prompt": "How many cars are there?", "frames": ["dummy_frame_1"], "gt": "3", "task": "VQA2", "source": "img1"}
+{"prompt": "How many buildings are visible?", "frames": ["dummy_frame_2"], "gt": "5", "task": "VQA2", "source": "img2"}
+{"prompt": "How many rivers are there?", "frames": ["dummy_frame_3"], "gt": "0", "task": "VQA2", "source": "img3"}

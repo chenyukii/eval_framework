@@ -1,0 +1,2 @@
+{"prompt": "判断是否有汽车", "frames": "base64_str", "gt": "Yes", "task": "VQA1", "source": "img1.jpg"}
+{"prompt": "统计卡车数量", "frames": "base64_str2", "gt": "3", "task": "VQA2", "source": "img2.jpg"}
