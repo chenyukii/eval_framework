@@ -5,5 +5,5 @@
   "pattern": "*.txt",
   "recursive": false,
   "calc_aux_metric": true,
-  "output_json": "vqa2_dir_result.json"
+  "output_json": "count_dir_result.json"
 }

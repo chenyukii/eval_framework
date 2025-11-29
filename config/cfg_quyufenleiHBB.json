@@ -1,0 +1,9 @@
+{
+  "task": "水平区域分类",
+  "annotation_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\raw_anno\\quyufenleiHBB",
+  "model_output_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\model_output\\quyufenleiHBB",
+  "pattern": "*.txt",
+  "recursive": false,
+  "calc_aux_metric": true,
+  "output_json": "quyufenleiHBB_dir_result.json"
+}

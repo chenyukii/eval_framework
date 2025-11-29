@@ -1,0 +1,9 @@
+{
+  "task": "图片检索",
+  "annotation_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\raw_anno\\tupianjiansuo",
+  "model_output_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\model_output\\tupianjiansuo",
+  "pattern": "*.txt",
+  "recursive": false,
+  "calc_aux_metric": true,
+  "output_json": "tupianjiansuo_dir_result.json"
+}
