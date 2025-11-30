@@ -1,0 +1,16 @@
+{
+  "metrics": {
+    "accuracy": 1.0,
+    "mae": 0.0
+  },
+  "stats": {
+    "num_anno_valid": 7,
+    "num_anno_invalid": 0,
+    "num_model_valid": 7,
+    "num_model_invalid": 0,
+    "num_paired": 7,
+    "num_files_total": 7,
+    "num_files_evaluated": 7,
+    "num_files_missing_model": 0
+  }
+}

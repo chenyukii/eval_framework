@@ -10,15 +10,12 @@ from .file_evaluator import (
     run_evaluation_for_file,
     run_evaluation_for_dir,
 )
-from .metrics import SUPPORTED_TASKS, is_supported_task
+from .metrics import SUPPORTED_TASKS, is_supported_task, normalize_task_name
 
 
 def load_config(path: str) -> Dict[str, Any]:
     """
     加载配置文件（支持 JSON / YAML）。
-
-    - .json       -> 用 json.load
-    - .yml/.yaml  -> 用 yaml.safe_load（需要已经安装 pyyaml）
     """
     if not os.path.exists(path):
         raise FileNotFoundError(f"配置文件不存在：{path}")
@@ -48,24 +45,7 @@ def load_config(path: str) -> Dict[str, Any]:
 
 def parse_args() -> argparse.Namespace:
     """
-    命令行参数定义：
-
-    三种使用方式（二选一）：
-
-    A）单文件评估 + 命令行参数
-        --task / -t
-        --annotation_file / -a
-        --model_output_file / -m
-
-    B）目录评估 + 命令行参数
-        --task / -t
-        --annotation_dir
-        --model_output_dir
-        [--pattern] [--recursive]
-
-    C）配置文件
-        --config config.json
-        （其他参数可选，用来覆盖配置里的内容）
+    命令行参数定义
     """
     parser = argparse.ArgumentParser(
         description="多模态遥感大模型多任务评估脚本",
@@ -77,10 +57,10 @@ def parse_args() -> argparse.Namespace:
         "-c",
         type=str,
         default=None,
-        help="配置文件路径（JSON 或 YAML），可在其中指定 task/输入文件/目录等参数",
+        help="配置文件路径（JSON / YAML），可在其中指定 task/输入文件/目录等参数",
     )
 
-    # 任务名称（不再强制 required，可以在配置里给）
+    # 任务名称
     parser.add_argument(
         "--task",
         "-t",
@@ -96,7 +76,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
-    # ===== 单文件模式 =====
+    # 单文件模式
     parser.add_argument(
         "--annotation_file",
         "-a",
@@ -113,7 +93,7 @@ def parse_args() -> argparse.Namespace:
         help="【单文件模式】模型输出文件路径（每行一个 JSON，或 JSON 数组）",
     )
 
-    # ===== 目录模式 =====
+    # 目录模式
     parser.add_argument(
         "--annotation_dir",
         type=str,
@@ -131,8 +111,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--pattern",
         type=str,
-        default=None,  # 让配置文件有机会覆盖默认值
-        help="【目录模式】标注文件匹配模式（默认：*.txt，可在配置中设置）",
+        default=None,
+        help="【目录模式】标注文件匹配模式（默认 *.txt，可在配置中设置）",
     )
 
     parser.add_argument(
@@ -141,7 +121,7 @@ def parse_args() -> argparse.Namespace:
         help="【目录模式】是否递归遍历子目录（命令行指定时会覆盖配置）",
     )
 
-    # ===== 通用选项 =====
+    # 通用选项
     parser.add_argument(
         "--no_aux_metric",
         action="store_true",
@@ -171,8 +151,8 @@ def main() -> int:
             print(f"错误：加载配置文件失败：\n{e}")
             return 1
 
-    # 1. 合并 task
-    task = args.task or config.get("task")
+    # 1. 合并 task（并归一化别名）
+    task = normalize_task_name(args.task or config.get("task"))
     if not task:
         print("错误：未指定任务类型。请通过 --task 或配置文件中的 task 字段进行指定。")
         return 1
@@ -181,7 +161,7 @@ def main() -> int:
     if not is_supported_task(task):
         print(f"错误：不支持的任务类型：{task}")
         print("当前支持的任务类型包括：")
-        print("  " + "、".join(sorted(SUPPORTED_TASKS)))
+        print("  " + ", ".join(sorted(SUPPORTED_TASKS)))
         return 1
 
     # 3. 合并文件/目录参数（命令行优先级高于配置）
@@ -201,7 +181,7 @@ def main() -> int:
     if args.recursive:
         recursive = True
 
-    # calc_aux_metric：默认 True，可在配置里设置为 False，命令行 --no_aux_metric 再强制关掉
+    # calc_aux_metric：默认 True，可在配置里设置为 False，命令行 --no_aux_metric 再强制关闭
     calc_aux_metric = bool(config.get("calc_aux_metric", True))
     if args.no_aux_metric:
         calc_aux_metric = False

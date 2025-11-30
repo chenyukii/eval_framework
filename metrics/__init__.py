@@ -10,6 +10,24 @@ from .retrieval import build_retrieval_metrics
 from .caption import build_caption_metrics
 
 
+# 在顶部定义
+TASK_ALIASES = {
+    "区域检测HBB": "水平区域检测",
+    "quyujianceHBB": "水平区域检测",
+    "区域检测OBB": "旋转区域检测",
+    "quyujianceOBB": "旋转区域检测",
+    "目标计数": "计数",
+    "count": "计数",
+    # 可继续补充其他历史写法
+}
+
+def normalize_task_name(task: str | None) -> str | None:
+    if task is None:
+        return None
+    task = task.strip()
+    return TASK_ALIASES.get(task, task)
+
+
 # 各任务类别划分（根据需求文档）
 CLASSIFICATION_TASKS = {
     "图片分类",
@@ -46,9 +64,14 @@ SUPPORTED_TASKS = (
 )
 
 
+# def is_supported_task(task: str) -> bool:
+#     """判断任务是否在当前评估框架支持范围内"""
+#     return task in SUPPORTED_TASKS
+
+#新增的行：标准化任务名称
 def is_supported_task(task: str) -> bool:
-    """判断任务是否在当前评估框架支持范围内"""
-    return task in SUPPORTED_TASKS
+    norm = normalize_task_name(task)
+    return norm in SUPPORTED_TASKS if norm else False
 
 
 def build_task_metrics(
@@ -75,6 +98,8 @@ def build_task_metrics(
     Raises:
         ValueError: 不支持的任务类型
     """
+    #新增的行：标准化任务名称
+    task = normalize_task_name(task) or task
     if task in CLASSIFICATION_TASKS:
         return build_classification_metrics(task)
 

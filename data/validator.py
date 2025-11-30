@@ -3,6 +3,7 @@ import json
 import base64
 from typing import List, Dict, Tuple, Optional
 from .parser import DataParser
+from ..metrics import normalize_task_name, is_supported_task
 
 
 class DataValidator:
@@ -17,18 +18,14 @@ class DataValidator:
             "水平区域分类", "旋转区域分类",
             "水平区域检测", "旋转区域检测",
             "视觉定位", "区域描述",
-            "预留扩展任务",  # 像素级任务预留
+            "预留扩展任务",
         }
 
         self.error_log_path = error_log_path
         self.invalid_sample_log_path = invalid_sample_log_path
-
-        # 初始化日志文件
         self._init_log_files()
 
     def _init_log_files(self):
-        """初始化日志文件"""
-        # 错误日志：包含任务类型
         if not os.path.exists(self.error_log_path):
             dir_name = os.path.dirname(self.error_log_path)
             if dir_name and not os.path.exists(dir_name):
@@ -36,7 +33,6 @@ class DataValidator:
             with open(self.error_log_path, 'w', encoding='utf-8') as f:
                 f.write("时间戳\t样本源\t任务类型\t错误类型\t错误描述\n")
 
-        # 无效样本日志：只需要记录 source 和原因即可
         if not os.path.exists(self.invalid_sample_log_path):
             dir_name = os.path.dirname(self.invalid_sample_log_path)
             if dir_name and not os.path.exists(dir_name):
@@ -45,60 +41,33 @@ class DataValidator:
                 f.write("时间戳\t样本源\t错误类型\t错误描述\n")
 
     def _log_error(self, source: str, task: str, error_type: str, error_desc: str):
-        """记录错误日志"""
         import datetime
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.error_log_path, 'a', encoding='utf-8') as f:
             f.write(f"{timestamp}\t{source}\t{task}\t{error_type}\t{error_desc}\n")
 
     def _log_invalid_sample(self, source: str, error_type: str, error_desc: str):
-        """记录无效样本日志"""
         import datetime
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.invalid_sample_log_path, 'a', encoding='utf-8') as f:
             f.write(f"{timestamp}\t{source}\t{error_type}\t{error_desc}\n")
 
     def validate_annotation_sample(self, sample: Dict[str, str]) -> Tuple[bool, Optional[str]]:
-        """
-        验证标注样本的有效性
-
-        Args:
-            sample: 标注样本字典
-
-        Returns:
-            (是否有效, 错误信息)
-        """
         required_fields = ["prompt", "frames", "gt", "task", "source"]
-
-        # 检查必填字段
         for field in required_fields:
             if field not in sample or not sample[field]:
                 error_msg = f"缺少必填字段 {field}"
                 self._log_invalid_sample(sample.get('source', 'unknown'), "字段缺失", error_msg)
                 return False, error_msg
 
-        # 检查任务类型是否支持
-        task = sample['task']
-        if task not in self.supported_tasks:
-            error_msg = f"不支持的任务类型 {task}"
+        task_norm = normalize_task_name(sample['task'])
+        if not task_norm or not is_supported_task(task_norm):
+            error_msg = f"不支持的任务类型 {sample['task']}"
             self._log_invalid_sample(sample['source'], "任务不支持", error_msg)
             return False, error_msg
+        sample['task'] = task_norm
 
-        # 检查frames的base64编码（开发测试阶段可跳过）
-        # 注意：根据需求文档，测试代码应跳过base64检测
-        # try:
-        #     if isinstance(sample['frames'], list):
-        #         for frame in sample['frames']:
-        #             base64.b64decode(frame)
-        #     else:
-        #         base64.b64decode(sample['frames'])
-        # except Exception as e:
-        #     error_msg = f"frames字段base64解码失败: {str(e)}"
-        #     self._log_invalid_sample(sample['source'], "base64解码失败", error_msg)
-        #     return False, error_msg
-
-        # 检查gt格式是否可解析
-        parsed_gt = self.parser.parse_gt(task, sample['gt'])
+        parsed_gt = self.parser.parse_gt(task_norm, sample['gt'])
         if parsed_gt is None:
             error_msg = f"gt字段格式错误: {sample['gt']}"
             self._log_invalid_sample(sample['source'], "gt格式错误", error_msg)
@@ -107,18 +76,7 @@ class DataValidator:
         return True, None
 
     def validate_model_output_sample(self, sample: Dict[str, str]) -> Tuple[bool, Optional[str]]:
-        """
-        验证模型输出样本的有效性
-
-        Args:
-            sample: 模型输出样本字典
-
-        Returns:
-            (是否有效, 错误信息)
-        """
         required_fields = ["sample_id", "task", "model_output", "source"]
-
-        # 检查必填字段
         for field in required_fields:
             if field not in sample or not sample[field]:
                 error_msg = f"缺少必填字段 {field}"
@@ -126,31 +84,28 @@ class DataValidator:
                                 "字段缺失", error_msg)
                 return False, error_msg
 
-        # 检查任务类型是否支持
-        task = sample['task']
-        if task not in self.supported_tasks:
-            error_msg = f"不支持的任务类型 {task}"
-            self._log_error(sample['source'], task, "任务不支持", error_msg)
+        task_norm = normalize_task_name(sample['task'])
+        if not task_norm or not is_supported_task(task_norm):
+            error_msg = f"不支持的任务类型 {sample['task']}"
+            self._log_error(sample['source'], sample.get('task', 'unknown'), "任务不支持", error_msg)
             return False, error_msg
+        sample['task'] = task_norm
 
-        # 检查model_output是否为空
         if not sample['model_output'].strip():
             error_msg = "模型输出为空"
-            self._log_error(sample['source'], task, "输出为空", error_msg)
+            self._log_error(sample['source'], task_norm, "输出为空", error_msg)
             return False, error_msg
 
-        # 检查model_output格式是否可解析
-        parsed_output = self.parser.parse_model_output(task, sample['model_output'])
+        parsed_output = self.parser.parse_model_output(task_norm, sample['model_output'])
         if parsed_output is None:
             error_msg = f"模型输出格式错误: {sample['model_output']}"
-            self._log_error(sample['source'], task, "输出格式错误", error_msg)
+            self._log_error(sample['source'], task_norm, "输出格式错误", error_msg)
             return False, error_msg
 
         return True, None
 
     def batch_validate_annotations(self, annotations: List[Dict[str, str]]) -> Tuple[
         List[Dict[str, str]], List[Dict[str, str]]]:
-        """批量验证标注样本，返回有效样本和无效样本"""
         valid = []
         invalid = []
         for sample in annotations:
@@ -164,7 +119,6 @@ class DataValidator:
 
     def batch_validate_model_outputs(self, outputs: List[Dict[str, str]]) -> Tuple[
         List[Dict[str, str]], List[Dict[str, str]]]:
-        """批量验证模型输出样本，返回有效样本和无效样本"""
         valid = []
         invalid = []
         for sample in outputs:

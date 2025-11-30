@@ -1,0 +1,7 @@
+{
+  "prompt": "Please provide a one-sentence caption for the provided remote sensing image.",
+  "frames": "base64",
+  "gt": "This is an infrared remote sensing image of a building scene with 1 person located mostly in the lower right.",
+  "task": "简洁图片描述",
+  "source": "/disk1/lyw/home/ljs/ASL-TID.v1i.voc/train/1--6-_png.rf.361d33ab6a367df12dc1bc4668bc368c.jpg"
+}

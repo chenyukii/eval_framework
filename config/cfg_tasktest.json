@@ -1,0 +1,9 @@
+{
+  "task": "计数",
+  "annotation_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\test\\annotation\\count",
+  "model_output_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\test\\model_output\\count",
+  "pattern": "*.txt",
+  "recursive": false,
+  "calc_aux_metric": true,
+  "output_json": "count_dir_result.json"
+}

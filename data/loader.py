@@ -46,43 +46,66 @@ class DataLoader:
             result[filename] = (valid, invalid)
         return result
 
-
     def load_annotation_file(self, file_path: str) -> List[Dict[str, str]]:
         """
-        加载标注文件（TXT-JSON格式）
-
-        Args:
-            file_path: 标注文件路径
-
-        Returns:
-            样本列表，每个样本是包含prompt、frames、gt、task、source的字典
+        加载标注文件，支持：
+        1) 行级 JSON（每行一个对象，默认）
+        2) JSON 数组（[...]）
+        3) 单个 JSON 对象（{...}，可跨行缩进）
         """
-        samples = []
+        samples: List[Dict[str, str]] = []
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"标注文件不存在: {file_path}")
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                for line_num, line in enumerate(f, 1):
-                    line = line.strip()
-                    if not line:
-                        continue  # 跳过空行
+                # 探测首个非空字符
+                head = ""
+                for line in f:
+                    stripped = line.lstrip()
+                    if stripped:
+                        head = stripped
+                        break
+                f.seek(0)
+
+                # 1) 如果是数组或单对象，直接一次性 json.load
+                if head.startswith("[") or head.startswith("{"):
                     try:
-                        sample = json.loads(line)
-                        # 验证必要字段
-                        required_fields = ['prompt', 'frames', 'gt', 'task', 'source']
-                        for field in required_fields:
-                            if field not in sample:
-                                raise ValueError(f"缺少必要字段: {field} (行号: {line_num})")
-                        samples.append(sample)
+                        data = json.load(f)
+                        if isinstance(data, dict):
+                            samples = [data]
+                        elif isinstance(data, list):
+                            samples = [x for x in data if isinstance(x, dict)]
+                        else:
+                            raise ValueError("JSON 顶层必须是对象或数组")
                     except json.JSONDecodeError as e:
-                        print(f"JSON解析错误 (行号: {line_num}): {str(e)}")
-                    except ValueError as e:
-                        print(f"数据验证错误 (行号: {line_num}): {str(e)}")
+                        print(f"JSON整体解析错误: {e}")
+                        return []
+                else:
+                    # 2) 行级 JSON 模式
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            sample = json.loads(line)
+                            required_fields = ['prompt', 'frames', 'gt', 'task', 'source']
+                            for field in required_fields:
+                                if field not in sample:
+                                    raise ValueError(f"缺少必要字段: {field} (行号: {line_num})")
+                            samples.append(sample)
+                        except json.JSONDecodeError as e:
+                            print(f"JSON解析错误 (行号: {line_num}): {str(e)}")
+                        except ValueError as e:
+                            print(f"数据验证错误 (行号: {line_num}): {str(e)}")
+
         except IOError as e:
             raise RuntimeError(f"读取标注文件失败: {str(e)}")
 
         return samples
+
+
+    
 
     def load_model_output_file(self, file_path: str) -> List[Dict[str, str]]:
         """

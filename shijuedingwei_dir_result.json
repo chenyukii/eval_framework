@@ -1,0 +1,16 @@
+{
+  "metrics": {
+    "ap_iou_0_5": 1.0,
+    "ap_iou_0_25": 1.0
+  },
+  "stats": {
+    "num_anno_valid": 100,
+    "num_anno_invalid": 0,
+    "num_model_valid": 100,
+    "num_model_invalid": 0,
+    "num_paired": 100,
+    "num_files_total": 100,
+    "num_files_evaluated": 100,
+    "num_files_missing_model": 0
+  }
+}
