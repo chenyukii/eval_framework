@@ -6,28 +6,54 @@ from typing import Any, Dict, List, Optional, Tuple
 from .base import BaseMetric, MetricCollection
 from ..utils.iou import bbox_iou, quad_iou
 
-
 BBox = Tuple[float, float, float, float]
 Quad = Tuple[float, float, float, float, float, float, float, float]
+
+
+def _extract_count_and_boxes(task: str, value: Any) -> Tuple[int, List[Any]]:
+    """
+    从解析后的检测类结果中提取 (count, boxes)。
+
+    适用任务：
+        - 水平区域检测、旋转区域检测：预期格式 (count, box_list)，也容忍直接传 box_list
+        - VQA3：预期 box_list，也兼容 (count, box_list) 写法
+
+    兜底逻辑：
+        - 无 count 时，用 len(box_list) 作为数量
+        - 无效输入时返回 (0, [])
+    """
+    if value is None:
+        return 0, []
+
+    if task in {"水平区域检测", "旋转区域检测", "VQA3"}:
+        # 优先处理 (count, box_list) 形式
+        if isinstance(value, tuple) and len(value) == 2:
+            raw_count, boxes = value
+            boxes = boxes if isinstance(boxes, list) else []
+            try:
+                count = int(raw_count)
+            except Exception:
+                count = len(boxes)
+            return count, boxes
+        # 直接给了列表：用列表长度兜底
+        if isinstance(value, list):
+            return len(value), value
+
+    return 0, []
 
 
 class DetectionAPMetric(BaseMetric):
     """
     通用检测 AP 指标（单类），支持：
-
         - 水平区域检测（水平框）
         - 旋转区域检测（旋转框）
-        - VQA3 边界框问答（水平框）
+        - VQA3（水平框）
         - 视觉定位（水平框）
 
-    设计思路：
-        - 每条样本在 update() 阶段只做“收集”：
-            - 根据 task 切出 gt / pred 中的 bbox / quad 列表
-            - 用 source 作为 image_id，将所有 box 存起来
-        - 在 compute() 阶段统一根据 IoU 阈值做匹配，计算 AP。
-        - 置信度目前需求没有提供，先全部当作 score=1.0，
-          相当于只在一个点上的 P-R 曲线，AP 退化为该点处的面积。
-          后续如果模型输出包含 score，可以很容易扩展。
+    说明：
+        - 当前模型输出没有置信度，内部将 score 固定为 1
+        - 因此 PR 曲线只会有一个点，AP 退化为该点的面积
+        - 如果未来有 score，可在计算前按 score 排序，得到标准 PR 曲线
     """
 
     def __init__(
@@ -52,7 +78,7 @@ class DetectionAPMetric(BaseMetric):
     def reset(self) -> None:
         # image_id -> gt 框列表
         self.gts: Dict[str, List[Any]] = {}
-        # image_id -> 预测框列表（当前不区分类别，单类检测）
+        # image_id -> 预测框列表（单类，无分类字段）
         self.preds: Dict[str, List[Any]] = {}
 
     def update(
@@ -65,83 +91,51 @@ class DetectionAPMetric(BaseMetric):
         **kwargs: Any,
     ) -> None:
         """
-        根据任务类型，从解析后的 gt / pred 中抽取出 bbox / quad 列表。
-
-        约定：
-            - 水平 / 旋转区域检测：
-                gt / pred: (count, box_list)
-            - VQA3 / 视觉定位：
-                gt / pred: box_list
+        按任务提取框列表并累积到当前 image_id：
+            - 检测类：从 (count, boxes) 取出 boxes
+            - VQA3/视觉定位：直接使用 boxes 列表
         """
         if source is None:
-            # 没有 image_id 无法做匹配，直接跳过
+            # 没有 image_id 无法匹配，直接跳过
             return
 
-        # 1) 按任务类型取出框列表
         if task in {"水平区域检测", "旋转区域检测"}:
-            gt_boxes: List[Any] = []
-            if gt is not None:
-                if isinstance(gt, tuple) and len(gt) == 2:
-                    _, gt_boxes = gt
-                elif isinstance(gt, list):
-                    gt_boxes = gt
-
-            pred_boxes: List[Any] = []
-            if pred is not None:
-                if isinstance(pred, tuple) and len(pred) == 2:
-                    _, pred_boxes = pred
-                elif isinstance(pred, list):
-                    pred_boxes = pred
-
+            _, gt_boxes = _extract_count_and_boxes(task, gt)
+            _, pred_boxes = _extract_count_and_boxes(task, pred)
         elif task in {"VQA3", "视觉定位"}:
             gt_boxes = gt if isinstance(gt, list) else (gt or [])
             pred_boxes = pred if isinstance(pred, list) else (pred or [])
-
         else:
-            # 非检测类任务，直接忽略
-            return
+            return  # 非检测任务直接忽略
 
-        if gt_boxes is None:
-            gt_boxes = []
-        if pred_boxes is None:
-            pred_boxes = []
+        gt_boxes = gt_boxes or []
+        pred_boxes = pred_boxes or []
 
-        # 2) 将同一 source 下的所有框累积起来
         self.gts.setdefault(source, []).extend(gt_boxes)
         self.preds.setdefault(source, []).extend(pred_boxes)
 
     def compute(self) -> float:
         """
-        计算在当前 IoU 阈值下的 AP。
-
-        实现步骤：
-            1. 展开所有图像的 gt 框，统计正样本总数 npos；
-            2. 展开所有预测框（目前 score=1.0 占位）；
-            3. 遍历每个预测框，在对应图像里找 IoU 最大且尚未匹配的 gt：
-                - 若 IoU >= 阈值：TP
-                - 否则：FP
-            4. 用累计 TP / FP 计算 P-R 曲线，并按照 VOC / COCO 风格计算 AP。
+        在当前 IoU 阈值下计算 AP（score=1 的退化版）：
+            1) 统计正样本数 npos
+            2) 展开所有预测（score 固定为 1）
+            3) 贪心匹配：每个预测找 IoU 最高且未匹配的 gt，IoU>=阈值记 TP，否则 FP
+            4) 累积 TP/FP 得到单点 PR，再积分求 AP
         """
-        # 1) 真实目标总数
         npos = sum(len(boxes) for boxes in self.gts.values())
 
-        # 2) 展开所有预测
-        # 元素结构： (image_id, box, score)
         detections: List[Tuple[str, Any, float]] = []
         for image_id, boxes in self.preds.items():
             for b in boxes:
-                detections.append((image_id, b, 1.0))  # 暂时统一 score=1.0
+                detections.append((image_id, b, 1.0))  # 目前无 score，固定 1.0
 
         if npos == 0 or not detections:
             return 0.0
 
-        # 如果将来有置信度，可以在这里按 score 排序
-        # detections.sort(key=lambda x: x[2], reverse=True)
+        # 如有 score，可在此排序：detections.sort(key=lambda x: x[2], reverse=True)
 
-        # 3) 为每个图像准备 gt 匹配标记
         gt_matched: Dict[str, List[bool]] = {
-            img_id: [False] * len(boxes)
-            for img_id, boxes in self.gts.items()
+            img_id: [False] * len(boxes) for img_id, boxes in self.gts.items()
         }
 
         tp: List[int] = []
@@ -171,7 +165,7 @@ class DetectionAPMetric(BaseMetric):
                 tp.append(0)
                 fp.append(1)
 
-        # 4) 累积 TP / FP，计算 P-R 曲线
+        # 累积 TP/FP，得到单点 PR
         tp_cum: List[int] = []
         fp_cum: List[int] = []
         c_tp = 0
@@ -195,21 +189,20 @@ class DetectionAPMetric(BaseMetric):
     @staticmethod
     def _compute_ap(recalls: List[float], precisions: List[float]) -> float:
         """
-        按 VOC / COCO 风格计算 AP：
-            1. 对 precision 做“后向包络”（保证随着 recall 增大 precision 非增）
-            2. 对 P-R 曲线做积分求面积
+        VOC/COCO 风格 AP 计算：后向包络 + 积分。
         """
         if not recalls:
             return 0.0
 
-        # 在首尾加上 (0,0) 和 (1,0) 方便积分
+        # 在首尾补 (0,0) 和 (1,0) 便于积分
         mrec = [0.0] + recalls + [1.0]
         mpre = [0.0] + precisions + [0.0]
 
-        # 让 precision 变成单调不增
+        # 后向包络，确保 precision 单调不增
         for i in range(len(mpre) - 2, -1, -1):
             mpre[i] = max(mpre[i], mpre[i + 1])
 
+        # 逐段累积面积
         ap = 0.0
         for i in range(1, len(mrec)):
             if mrec[i] != mrec[i - 1]:
@@ -218,20 +211,97 @@ class DetectionAPMetric(BaseMetric):
         return ap
 
 
+class DetectionCountAccuracy(BaseMetric):
+    """
+    数量准确率：预测数量 == gt 数量 计为正确。
+    适用：水平/旋转区域检测、VQA3。
+    """
+
+    def __init__(self, name: str = "count_acc", is_aux: bool = True) -> None:
+        super().__init__(name=name, is_aux=is_aux)
+
+    def reset(self) -> None:
+        self.correct = 0
+        self.total = 0
+
+    def update(
+        self,
+        *,
+        gt: Any,
+        pred: Any,
+        task: Optional[str] = None,
+        source: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        if task not in {"水平区域检测", "旋转区域检测", "VQA3"}:
+            return
+        gt_count, _ = _extract_count_and_boxes(task, gt)
+        pred_count, _ = _extract_count_and_boxes(task, pred)
+
+        # 两边都 0 且无框信息时跳过（避免把“全空”计入统计）
+        if gt_count == 0 and pred_count == 0:
+            return
+
+        self.total += 1
+        if gt_count == pred_count:
+            self.correct += 1
+
+    def compute(self) -> float:
+        if self.total == 0:
+            return 0.0
+        return self.correct / self.total
+
+
+class DetectionCountMAE(BaseMetric):
+    """
+    数量 MAE：|pred_count - gt_count| 的平均值。
+    适用：水平/旋转区域检测、VQA3。
+    """
+
+    def __init__(self, name: str = "count_mae", is_aux: bool = True) -> None:
+        super().__init__(name=name, is_aux=is_aux)
+
+    def reset(self) -> None:
+        self.errors: List[float] = []
+
+    def update(
+        self,
+        *,
+        gt: Any,
+        pred: Any,
+        task: Optional[str] = None,
+        source: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        if task not in {"水平区域检测", "旋转区域检测", "VQA3"}:
+            return
+        gt_count, _ = _extract_count_and_boxes(task, gt)
+        pred_count, _ = _extract_count_and_boxes(task, pred)
+
+        # 两边都 0 且无框信息时跳过
+        if gt_count == 0 and pred_count == 0:
+            return
+
+        self.errors.append(abs(pred_count - gt_count))
+
+    def compute(self) -> float:
+        if not self.errors:
+            return 0.0
+        return sum(self.errors) / len(self.errors)
+
+
 def build_detection_metrics(task: str) -> MetricCollection:
     """
-    根据任务类型构建检测相关的指标集合。
-
-    对应关系（来自需求文档）：:contentReference[oaicite:5]{index=5}
+    构建检测类指标集合：
         - 水平 / 旋转区域检测：
-            - 核心：AP@IoU=0.5
-            - 辅助：AP@IoU=0.75
-        - VQA3（边界框问答）：
-            - 核心：AP@IoU=0.5
-            - 辅助：AP@IoU=0.75
+            核心：AP@0.5
+            辅助：AP@0.75 + count_acc + count_mae
+        - VQA3：
+            核心：AP@0.5
+            辅助：AP@0.75 + count_acc + count_mae
         - 视觉定位：
-            - 核心：AP@IoU=0.5
-            - 辅助：AP@IoU=0.25
+            核心：AP@0.5
+            辅助：AP@0.25
     """
     metrics: List[BaseMetric] = []
 
@@ -252,6 +322,8 @@ def build_detection_metrics(task: str) -> MetricCollection:
                 is_aux=True,
             )
         )
+        metrics.append(DetectionCountAccuracy(name="count_acc", is_aux=True))
+        metrics.append(DetectionCountMAE(name="count_mae", is_aux=True))
 
     elif task == "旋转区域检测":
         metrics.append(
@@ -270,6 +342,8 @@ def build_detection_metrics(task: str) -> MetricCollection:
                 is_aux=True,
             )
         )
+        metrics.append(DetectionCountAccuracy(name="count_acc", is_aux=True))
+        metrics.append(DetectionCountMAE(name="count_mae", is_aux=True))
 
     elif task == "VQA3":
         metrics.append(
@@ -288,6 +362,8 @@ def build_detection_metrics(task: str) -> MetricCollection:
                 is_aux=True,
             )
         )
+        metrics.append(DetectionCountAccuracy(name="count_acc", is_aux=True))
+        metrics.append(DetectionCountMAE(name="count_mae", is_aux=True))
 
     elif task == "视觉定位":
         metrics.append(
@@ -307,6 +383,5 @@ def build_detection_metrics(task: str) -> MetricCollection:
             )
         )
 
-    # 对于非检测任务，返回空集合，上层不该调用这里
-
+    # 非检测任务不会走到这里
     return MetricCollection(metrics)
