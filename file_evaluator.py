@@ -7,13 +7,15 @@ from typing import Any, Dict, List, Tuple
 
 from .data.loader import DataLoader
 from .evaluator import EvaluationCore
+from .utils.logger import get_logger, log_struct
+
+logger = get_logger(__name__)
 
 
 class FileEvaluationRunner:
     """
     文件级评估封装：
-
-    输入：标注文件路径 + 模型输出文件路径 + task 名
+    输入：标注文件路径 + 模型输出文件路径 + task
     内部：
         - DataLoader 负责：读取文件 + 验证样本 + 配对样本
         - EvaluationCore 负责：解析 gt/model_output + 指标计算
@@ -25,7 +27,7 @@ class FileEvaluationRunner:
         error_log_path: str = "./error_log.txt",
         invalid_sample_log_path: str = "./invalid_sample_log.txt",
     ) -> None:
-        # DataLoader 内部会自己 new DataParser 和 DataValidator
+        # DataLoader 内部会自带 DataParser & DataValidator
         self.loader = DataLoader(
             error_log_path=error_log_path,
             invalid_sample_log_path=invalid_sample_log_path,
@@ -58,14 +60,14 @@ class FileEvaluationRunner:
         paired_samples: List[Tuple[Dict[str, Any], Dict[str, Any]]] = \
             self.loader.pair_samples(anno_valid, model_valid)
 
-        # 4. 调用 EvaluationCore，走“原始样本对 → 解析 → 指标”这一条链
+        # 4. 调用 EvaluationCore，走“原始样本对 -> 解析 -> 指标”这一条链
         metrics = self.core.evaluate_raw_paired_samples(
             task=task,
             paired_samples=paired_samples,
             calc_aux_metric=calc_aux_metric,
         )
 
-        # 5. 顺便把一些统计信息也返回，方便你后面在 CLI / 日志里展示
+        # 5. 顺便把一些统计信息也返回，方便后续展示
         stats = {
             "num_anno_valid": len(anno_valid),
             "num_anno_invalid": len(anno_invalid),
@@ -73,6 +75,23 @@ class FileEvaluationRunner:
             "num_model_invalid": len(model_invalid),
             "num_paired": len(paired_samples),
         }
+
+        logger.info(
+            "单文件评估完成 | task=%s | 指标=%s | 统计=%s",
+            task,
+            metrics,
+            stats,
+        )
+        if anno_invalid or model_invalid:
+            log_struct(
+                stage="evaluate",
+                error_code="INVALID_SAMPLES_PRESENT",
+                message="存在无效样本，已跳过。",
+                level="WARNING",
+                logger=logger,
+                anno_invalid=len(anno_invalid),
+                model_invalid=len(model_invalid),
+            )
 
         return {
             "metrics": metrics,
@@ -107,7 +126,6 @@ def run_evaluation_for_file(
 class DirEvaluationRunner:
     """
     目录级评估：
-
     - anno_dir 下可以有多个标注文件（默认 *.txt）
     - model_dir 下放对应的模型输出文件（默认“同名匹配”）
     - 使用同一份 metrics 对整个目录 streaming 更新，避免一次性吃爆内存
@@ -127,11 +145,6 @@ class DirEvaluationRunner:
     def _find_model_file(self, annotation_file: str, model_dir: str) -> str | None:
         """
         默认策略：同名匹配
-
-        annotation_file: /path/to/anno/split1.txt
-        model_dir:       /path/to/model/
-
-        -> 期望模型文件：/path/to/model/split1.txt
         """
         base = os.path.basename(annotation_file)
         candidate = os.path.join(model_dir, base)
@@ -149,11 +162,6 @@ class DirEvaluationRunner:
     ) -> Dict[str, Any]:
         """
         对一个目录下的多对标注/模型输出文件做“整体评估”。
-
-        - 会为整个目录构建一份全局 metrics
-        - 每个文件对只负责：
-            文件读取 → 验证 → 配对 → update_metrics_with_raw_pairs
-        - 最后对全局 metrics 调用一次 compute_all()
         """
         # 1. 列出所有标注文件
         if recursive:
@@ -185,10 +193,18 @@ class DirEvaluationRunner:
             model_file = self._find_model_file(anno_file, model_dir)
             if model_file is None:
                 stats["num_files_missing_model"] += 1
-                print(f"[警告] 找不到对应模型输出文件，跳过：{anno_file}")
+                logger.warning("[警告] 找不到对应模型输出文件，跳过：%s", anno_file)
+                log_struct(
+                    stage="match",
+                    error_code="MODEL_FILE_MISSING",
+                    message="目录模式缺少对应模型输出文件",
+                    level="WARNING",
+                    logger=logger,
+                    anno_file=anno_file,
+                )
                 continue
 
-            print(f"[INFO] 评估文件对：{anno_file}  vs  {model_file}")
+            logger.info("[INFO] 评估文件对：%s  vs  %s", anno_file, model_file)
 
             anno_valid, anno_invalid = self.loader.load_and_validate_annotation_file(
                 anno_file
@@ -213,11 +229,27 @@ class DirEvaluationRunner:
                 paired_samples=paired_samples,
             )
 
-            # 用完就释放 per-file 列表的引用，给 GC 回收空间
+            # 用完就释放 per-file 列表的引用，便于 GC
             del anno_valid, anno_invalid, model_valid, model_invalid, paired_samples
 
-        # 5. 所有文件处理完之后再 compute 一次，全局指标
+        # 5. 所有文件处理完之后 compute 一次，全局指标
         metric_result = metrics.compute_all()
+
+        logger.info(
+            "目录评估完成 | task=%s | 指标=%s | 统计=%s",
+            task,
+            metric_result,
+            stats,
+        )
+        if stats["num_files_missing_model"] > 0:
+            log_struct(
+                stage="evaluate",
+                error_code="MISSING_MODEL_FILES",
+                message="部分标注文件缺少对应模型输出文件",
+                level="WARNING",
+                logger=logger,
+                missing_files=stats["num_files_missing_model"],
+            )
 
         return {
             "metrics": metric_result,
@@ -236,7 +268,6 @@ def run_evaluation_for_dir(
 ) -> Dict[str, Any]:
     """
     目录级便捷函数：
-
     Example:
         result = run_evaluation_for_dir(
             task="VQA2",

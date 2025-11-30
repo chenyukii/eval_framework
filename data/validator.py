@@ -4,10 +4,13 @@ import base64
 from typing import List, Dict, Tuple, Optional
 from .parser import DataParser
 from ..metrics import normalize_task_name, is_supported_task
+from ..utils.logger import get_logger, log_struct
+
+logger = get_logger(__name__)
 
 
 class DataValidator:
-    """数据验证器，负责校验标注数据和模型输出的有效性"""
+    """数据验证器，负责校验标注数据和模型输出的有效性，并输出结构化日志。"""
 
     def __init__(self, error_log_path: str = "./error_log.txt",
                  invalid_sample_log_path: str = "./invalid_sample_log.txt"):
@@ -41,16 +44,35 @@ class DataValidator:
                 f.write("时间戳\t样本源\t错误类型\t错误描述\n")
 
     def _log_error(self, source: str, task: str, error_type: str, error_desc: str):
+        """原有文本日志；保留兼容，同时写结构化日志。"""
         import datetime
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.error_log_path, 'a', encoding='utf-8') as f:
             f.write(f"{timestamp}\t{source}\t{task}\t{error_type}\t{error_desc}\n")
+        log_struct(
+            stage="validate",
+            error_code=error_type,
+            message=error_desc,
+            level="ERROR",
+            logger=logger,
+            source=source,
+            task=task,
+        )
 
     def _log_invalid_sample(self, source: str, error_type: str, error_desc: str):
+        """原有文本日志；保留兼容，同时写结构化日志。"""
         import datetime
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.invalid_sample_log_path, 'a', encoding='utf-8') as f:
             f.write(f"{timestamp}\t{source}\t{error_type}\t{error_desc}\n")
+        log_struct(
+            stage="validate",
+            error_code=error_type,
+            message=error_desc,
+            level="WARNING",
+            logger=logger,
+            source=source,
+        )
 
     def validate_annotation_sample(self, sample: Dict[str, str]) -> Tuple[bool, Optional[str]]:
         required_fields = ["prompt", "frames", "gt", "task", "source"]
@@ -114,7 +136,7 @@ class DataValidator:
                 valid.append(sample)
             else:
                 invalid.append(sample)
-        print(f"标注样本验证完成 - 有效: {len(valid)}, 无效: {len(invalid)}")
+        logger.info("标注样本验证完成 - 有效: %d, 无效: %d", len(valid), len(invalid))
         return valid, invalid
 
     def batch_validate_model_outputs(self, outputs: List[Dict[str, str]]) -> Tuple[
@@ -127,5 +149,5 @@ class DataValidator:
                 valid.append(sample)
             else:
                 invalid.append(sample)
-        print(f"模型输出验证完成 - 有效: {len(valid)}, 无效: {len(invalid)}")
+        logger.info("模型输出验证完成 - 有效: %d, 无效: %d", len(valid), len(invalid))
         return valid, invalid

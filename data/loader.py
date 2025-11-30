@@ -3,29 +3,28 @@ from typing import List, Dict, Tuple, Optional
 import os
 from .parser import DataParser
 from .validator import DataValidator
+from ..utils.logger import get_logger, log_struct
+
+logger = get_logger(__name__)
 
 class DataLoader:
     """数据加载器，负责加载和解析标注文件与模型输出文件"""
 
     def __init__(self, error_log_path: str = "./error_log.txt",
                  invalid_sample_log_path: str = "./invalid_sample_log.txt"):
-        # 原有初始化代码...
         self.parser = DataParser()
         self.validator = DataValidator(error_log_path, invalid_sample_log_path)
 
-    # 新增方法：加载并验证标注文件
     def load_and_validate_annotation_file(self, file_path: str) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
         """加载并验证标注文件，返回有效和无效样本"""
         samples = self.load_annotation_file(file_path)
         return self.validator.batch_validate_annotations(samples)
 
-    # 新增方法：加载并验证模型输出文件
     def load_and_validate_model_output_file(self, file_path: str) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
         """加载并验证模型输出文件，返回有效和无效样本"""
         outputs = self.load_model_output_file(file_path)
         return self.validator.batch_validate_model_outputs(outputs)
 
-    # 新增批量加载验证方法
     def batch_load_validate_annotation_dir(self, dir_path: str) -> Dict[
         str, Tuple[List[Dict[str, str]], List[Dict[str, str]]]]:
         """批量加载并验证目录下的标注文件"""
@@ -55,7 +54,7 @@ class DataLoader:
         """
         samples: List[Dict[str, str]] = []
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"标注文件不存在: {file_path}")
+            raise FileNotFoundError(f"标注文件不存在 {file_path}")
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -79,7 +78,10 @@ class DataLoader:
                         else:
                             raise ValueError("JSON 顶层必须是对象或数组")
                     except json.JSONDecodeError as e:
-                        print(f"JSON整体解析错误: {e}")
+                        logger.error("JSON整体解析错误: %s", e)
+                        log_struct(stage="load", error_code="JSON_DECODE_FAIL",
+                                   message=str(e), level="ERROR", logger=logger,
+                                   file=file_path)
                         return []
                 else:
                     # 2) 行级 JSON 模式
@@ -95,17 +97,20 @@ class DataLoader:
                                     raise ValueError(f"缺少必要字段: {field} (行号: {line_num})")
                             samples.append(sample)
                         except json.JSONDecodeError as e:
-                            print(f"JSON解析错误 (行号: {line_num}): {str(e)}")
+                            logger.warning("JSON解析错误 (行号: %d): %s", line_num, str(e))
+                            log_struct(stage="load", error_code="JSON_LINE_DECODE_FAIL",
+                                       message=str(e), level="WARNING", logger=logger,
+                                       file=file_path, line=line_num)
                         except ValueError as e:
-                            print(f"数据验证错误 (行号: {line_num}): {str(e)}")
+                            logger.warning("数据验证错误 (行号: %d): %s", line_num, str(e))
+                            log_struct(stage="load", error_code="REQUIRED_FIELD_MISSING",
+                                       message=str(e), level="WARNING", logger=logger,
+                                       file=file_path, line=line_num)
 
         except IOError as e:
             raise RuntimeError(f"读取标注文件失败: {str(e)}")
 
         return samples
-
-
-    
 
     def load_model_output_file(self, file_path: str) -> List[Dict[str, str]]:
         """
@@ -119,7 +124,7 @@ class DataLoader:
         """
         outputs = []
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"模型输出文件不存在: {file_path}")
+            raise FileNotFoundError(f"模型输出文件不存在 {file_path}")
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -143,7 +148,10 @@ class DataLoader:
                             output = json.loads(line)
                             outputs.append(output)
                         except json.JSONDecodeError as e:
-                            print(f"JSON解析错误 (行号: {line_num}): {str(e)}")
+                            logger.warning("模型输出 JSON 解析错误 (行号: %d): %s", line_num, str(e))
+                            log_struct(stage="load", error_code="MODEL_JSON_DECODE_FAIL",
+                                       message=str(e), level="WARNING", logger=logger,
+                                       file=file_path, line=line_num)
 
             # 验证所有输出的必要字段
             required_fields = ['sample_id', 'task', 'model_output', 'source']
@@ -222,14 +230,20 @@ class DataLoader:
             if idx not in used_model_indices
         ]
 
-        print(
-            f"样本配对完成 - 成功: {len(paired)}, "
-            f"未匹配标注样本: {len(unpaired_anno)}, "
-            f"未匹配模型输出: {len(unpaired_model)}"
+        logger.info(
+            "样本配对完成 - 成功: %d, 未匹配标注: %d, 未匹配模型输出: %d",
+            len(paired), len(unpaired_anno), len(unpaired_model)
         )
-
         if unpaired_anno or unpaired_model:
-            print("警告: 存在未匹配样本，可能影响评估结果准确性")
+            log_struct(
+                stage="match",
+                error_code="UNMATCHED_SAMPLES",
+                message="存在未匹配样本，可能影响评估结果准确性",
+                level="WARNING",
+                logger=logger,
+                unpaired_anno=len(unpaired_anno),
+                unpaired_model=len(unpaired_model),
+            )
 
         return paired
 
@@ -240,13 +254,6 @@ class DataLoader:
         批量配对标注文件与模型输出文件中的样本
 
         配对规则：基于文件名关联（如"test.txt"对应"test_output.txt"）
-
-        Args:
-            anno_files: 批量加载的标注文件字典 {文件名: 样本列表}
-            model_output_files: 批量加载的模型输出文件字典 {文件名: 输出列表}
-
-        Returns:
-            配对成功的文件-样本字典 {文件名对: 配对样本列表}
         """
         paired_files = {}
 
@@ -274,24 +281,27 @@ class DataLoader:
                 paired_samples = self.pair_samples(anno_samples, model_samples)
                 if paired_samples:
                     paired_files[f"{anno_filename}->{matched_output_name}"] = paired_samples
-                    print(f"文件配对成功: {anno_filename} 与 {matched_output_name}, 样本对数: {len(paired_samples)}")
+                    logger.info("文件配对成功: %s -> %s, 样本对数: %d",
+                                anno_filename, matched_output_name, len(paired_samples))
             else:
-                print(f"未找到 {anno_filename} 对应的模型输出文件")
+                logger.warning("未找到 %s 对应的模型输出文件", anno_filename)
+                log_struct(
+                    stage="match",
+                    error_code="MODEL_FILE_MISSING",
+                    message=f"未找到 {anno_filename} 对应的模型输出文件",
+                    level="WARNING",
+                    logger=logger,
+                    anno_file=anno_filename,
+                )
 
         return paired_files
 
     def batch_load_annotation_dir(self, dir_path: str) -> Dict[str, List[Dict[str, str]]]:
         """
         批量加载目录下的所有标注文件
-
-        Args:
-            dir_path: 标注文件目录路径
-
-        Returns:
-            字典，键为文件名，值为该文件加载的样本列表
         """
         if not os.path.isdir(dir_path):
-            raise NotADirectoryError(f"标注文件目录不存在: {dir_path}")
+            raise NotADirectoryError(f"标注文件目录不存在 {dir_path}")
 
         annotation_files = {}
         # 遍历目录下所有txt文件（标注文件默认为txt格式）
@@ -300,28 +310,24 @@ class DataLoader:
                 file_path = os.path.join(dir_path, filename)
                 if os.path.isfile(file_path):
                     try:
-                        # 调用单文件加载方法
                         samples = self.load_annotation_file(file_path)
                         if samples:  # 只保留有样本的文件
                             annotation_files[filename] = samples
-                            print(f"成功加载标注文件: {filename}，样本数: {len(samples)}")
+                            logger.info("成功加载标注文件: %s，样本数: %d", filename, len(samples))
                     except Exception as e:
-                        print(f"加载标注文件 {filename} 失败: {str(e)}")
+                        logger.warning("加载标注文件 %s 失败: %s", filename, str(e))
+                        log_struct(stage="load", error_code="ANNOTATION_LOAD_FAIL",
+                                   message=str(e), level="WARNING", logger=logger,
+                                   file=file_path)
 
         return annotation_files
 
     def batch_load_model_output_dir(self, dir_path: str) -> Dict[str, List[Dict[str, str]]]:
         """
         批量加载目录下的所有模型输出文件
-
-        Args:
-            dir_path: 模型输出文件目录路径
-
-        Returns:
-            字典，键为文件名，值为该文件加载的模型输出列表
         """
         if not os.path.isdir(dir_path):
-            raise NotADirectoryError(f"模型输出文件目录不存在: {dir_path}")
+            raise NotADirectoryError(f"模型输出文件目录不存在 {dir_path}")
 
         model_output_files = {}
         # 遍历目录下所有txt和json文件（模型输出支持这两种格式）
@@ -330,12 +336,14 @@ class DataLoader:
                 file_path = os.path.join(dir_path, filename)
                 if os.path.isfile(file_path):
                     try:
-                        # 调用单文件加载方法
                         outputs = self.load_model_output_file(file_path)
                         if outputs:  # 只保留有输出的文件
                             model_output_files[filename] = outputs
-                            print(f"成功加载模型输出文件: {filename}，输出数: {len(outputs)}")
+                            logger.info("成功加载模型输出文件: %s，输出数: %d", filename, len(outputs))
                     except Exception as e:
-                        print(f"加载模型输出文件 {filename} 失败: {str(e)}")
+                        logger.warning("加载模型输出文件 %s 失败: %s", filename, str(e))
+                        log_struct(stage="load", error_code="MODEL_LOAD_FAIL",
+                                   message=str(e), level="WARNING", logger=logger,
+                                   file=file_path)
 
         return model_output_files

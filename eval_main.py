@@ -11,6 +11,13 @@ from .file_evaluator import (
     run_evaluation_for_dir,
 )
 from .metrics import SUPPORTED_TASKS, is_supported_task, normalize_task_name
+from .utils.logger import (
+    configure_logging,
+    get_logger,
+    set_structured_log_path,
+)
+
+logger = get_logger(__name__)
 
 
 def load_config(path: str) -> Dict[str, Any]:
@@ -45,7 +52,7 @@ def load_config(path: str) -> Dict[str, Any]:
 
 def parse_args() -> argparse.Namespace:
     """
-    命令行参数定义
+    命令行参数定义。
     """
     parser = argparse.ArgumentParser(
         description="多模态遥感大模型多任务评估脚本",
@@ -69,9 +76,9 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "任务名称，例如："
-            "图片分类、水平区域分类、旋转区域分类、"
-            "VQA1、VQA2、计数、"
-            "水平区域检测、旋转区域检测、VQA3、视觉定位、"
+            "图片分类、水平区域分类、旋转区域分类；"
+            "VQA1、VQA2、计数；"
+            "水平区域检测、旋转区域检测、VQA3、视觉定位；"
             "图片检索、简洁图片描述、详细图片描述、区域描述"
         ),
     )
@@ -136,6 +143,26 @@ def parse_args() -> argparse.Namespace:
         help="将评估结果（metrics + stats）保存到指定 JSON 文件路径（命令行会覆盖配置）",
     )
 
+    # 日志相关
+    parser.add_argument(
+        "--log_level",
+        type=str,
+        default=None,
+        help="日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL），默认 INFO",
+    )
+    parser.add_argument(
+        "--log_file",
+        type=str,
+        default=None,
+        help="日志文件输出路径，默认仅控制台",
+    )
+    parser.add_argument(
+        "--structured_error_log",
+        type=str,
+        default=None,
+        help="结构化错误日志（JSONL）路径，默认 logs/error_structured.jsonl",
+    )
+
     return parser.parse_args()
 
 
@@ -151,20 +178,28 @@ def main() -> int:
             print(f"错误：加载配置文件失败：\n{e}")
             return 1
 
-    # 1. 合并 task（并归一化别名）
+    # 1. 初始化日志
+    log_level = (args.log_level or config.get("log_level") or "INFO").upper()
+    log_file = args.log_file or config.get("log_file")
+    structured_log = args.structured_error_log or config.get(
+        "structured_error_log", os.path.join("logs", "error_structured.jsonl")
+    )
+    configure_logging(level=log_level, log_file=log_file)
+    set_structured_log_path(structured_log)
+    logger.info("日志初始化完成", extra={"log_level": log_level, "log_file": log_file, "structured_log": structured_log})
+
+    # 2. 合并 task（并归一化别名）
     task = normalize_task_name(args.task or config.get("task"))
     if not task:
-        print("错误：未指定任务类型。请通过 --task 或配置文件中的 task 字段进行指定。")
+        logger.error("未指定任务类型。请通过 --task 或配置文件中的 task 字段指定。")
         return 1
 
-    # 2. 检查 task 是否支持
+    # 3. 检查 task 是否支持
     if not is_supported_task(task):
-        print(f"错误：不支持的任务类型：{task}")
-        print("当前支持的任务类型包括：")
-        print("  " + ", ".join(sorted(SUPPORTED_TASKS)))
+        logger.error("不支持的任务类型：%s；当前支持：%s", task, ", ".join(sorted(SUPPORTED_TASKS)))
         return 1
 
-    # 3. 合并文件/目录参数（命令行优先级高于配置）
+    # 4. 合并文件/目录参数（命令行优先级高于配置）
     anno_file = args.annotation_file or config.get("annotation_file")
     model_file = args.model_output_file or config.get("model_output_file")
 
@@ -189,42 +224,35 @@ def main() -> int:
     # output_json：命令行优先
     output_json = args.output_json or config.get("output_json")
 
-    # 4. 判断是单文件模式还是目录模式
+    # 5. 判断是单文件模式还是目录模式
     use_file_mode = anno_file is not None and model_file is not None
     use_dir_mode = anno_dir is not None and model_dir is not None
 
     if use_file_mode and use_dir_mode:
-        print("错误：不能同时指定文件模式和目录模式。")
-        print("请二选一：")
-        print("  单文件模式：annotation_file + model_output_file（命令行或配置）")
-        print("  目录模式  ：annotation_dir + model_output_dir（命令行或配置）")
+        logger.error("不能同时指定文件模式和目录模式，请二选一。")
         return 1
 
     if not use_file_mode and not use_dir_mode:
-        print("错误：既没有提供文件路径，也没有提供目录路径。")
-        print("请至少选择一种模式：")
-        print("  单文件模式：annotation_file + model_output_file")
-        print("  目录模式  ：annotation_dir + model_output_dir")
+        logger.error("既没有提供文件路径，也没有提供目录路径，请至少选择一种模式。")
         return 1
 
     # ========== 单文件模式 ==========
     if use_file_mode:
         if not os.path.exists(anno_file):
-            print(f"错误：标注文件不存在：{anno_file}")
+            logger.error("标注文件不存在：%s", anno_file)
             return 1
 
         if not os.path.exists(model_file):
-            print(f"错误：模型输出文件不存在：{model_file}")
+            logger.error("模型输出文件不存在：%s", model_file)
             return 1
 
-        print("========== 评估配置（单文件模式） ==========")
-        if args.config:
-            print(f"配置文件      : {args.config}")
-        print(f"任务类型      : {task}")
-        print(f"标注文件      : {anno_file}")
-        print(f"模型输出文件  : {model_file}")
-        print(f"计算辅助指标  : {calc_aux_metric}")
-        print("==========================================")
+        logger.info(
+            "评估配置（单文件模式） | 任务=%s | 标注=%s | 模型输出=%s | 计算辅助指标=%s",
+            task,
+            anno_file,
+            model_file,
+            calc_aux_metric,
+        )
 
         result: Dict[str, Any] = run_evaluation_for_file(
             task=task,
@@ -236,23 +264,22 @@ def main() -> int:
     # ========== 目录模式 ==========
     else:
         if not os.path.isdir(anno_dir):
-            print(f"错误：标注目录不存在或不是目录：{anno_dir}")
+            logger.error("标注目录不存在或不是目录：%s", anno_dir)
             return 1
 
         if not os.path.isdir(model_dir):
-            print(f"错误：模型输出目录不存在或不是目录：{model_dir}")
+            logger.error("模型输出目录不存在或不是目录：%s", model_dir)
             return 1
 
-        print("========== 评估配置（目录模式） ==========")
-        if args.config:
-            print(f"配置文件      : {args.config}")
-        print(f"任务类型      : {task}")
-        print(f"标注目录      : {anno_dir}")
-        print(f"模型输出目录  : {model_dir}")
-        print(f"文件匹配模式  : {pattern}")
-        print(f"递归子目录    : {recursive}")
-        print(f"计算辅助指标  : {calc_aux_metric}")
-        print("==========================================")
+        logger.info(
+            "评估配置（目录模式） | 任务=%s | 标注目录=%s | 模型目录=%s | pattern=%s | 递归=%s | 计算辅助指标=%s",
+            task,
+            anno_dir,
+            model_dir,
+            pattern,
+            recursive,
+            calc_aux_metric,
+        )
 
         result: Dict[str, Any] = run_evaluation_for_dir(
             task=task,
@@ -266,33 +293,31 @@ def main() -> int:
     metrics: Dict[str, float] = result.get("metrics", {})
     stats: Dict[str, Any] = result.get("stats", {})
 
-    # 5. 打印指标结果
-    print("\n========== 评估结果（metrics） ==========")
+    # 6. 打印指标结果
+    logger.info("评估结果（metrics）")
     if not metrics:
-        print("没有可用指标（可能是没有有效样本/配对样本）。")
+        logger.warning("没有可用指标（可能是没有有效样本/配对样本）。")
     else:
         for name, value in metrics.items():
-            print(f"{name:20s}: {value:.4f}")
-    print("==========================================")
+            logger.info("%s : %.4f", name, value)
 
-    # 6. 打印样本/文件统计信息
-    print("\n========== 样本 / 文件统计（stats） ==========")
+    # 7. 打印样本/文件统计信息
+    logger.info("样本 / 文件统计（stats）")
     if not stats:
-        print("没有统计信息。")
+        logger.warning("没有统计信息。")
     else:
         for name, value in stats.items():
-            print(f"{name:20s}: {value}")
-    print("============================================")
+            logger.info("%s : %s", name, value)
 
-    # 7. 如果需要，将结果输出到 JSON 文件
+    # 8. 如果需要，将结果输出到 JSON 文件
     if output_json:
         out_path = output_json
         try:
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
-            print(f"\n已将评估结果保存到：{out_path}")
+            logger.info("已将评估结果保存到：%s", out_path)
         except Exception as e:
-            print(f"\n警告：写入 JSON 文件失败（{out_path}）：{e}")
+            logger.warning("写入 JSON 文件失败（%s）：%s", out_path, e)
 
     return 0
 
