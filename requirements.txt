@@ -16,7 +16,7 @@ tqdm==4.65.0
 torch==1.13.1  # 若需GPU支持，需额外安装对应CUDA版本
 
 numpy
-shapely
+shapely==2.0.2
 scikit-learn
 nltk
 scipy

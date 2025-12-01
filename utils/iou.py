@@ -3,6 +3,14 @@ from __future__ import annotations
 
 from typing import Iterable, List, Sequence, Tuple
 
+try:
+    from shapely.geometry import Polygon as ShapelyPolygon
+    from shapely.ops import unary_union as shapely_union
+
+    _HAVE_SHAPELY = True
+except Exception:
+    _HAVE_SHAPELY = False
+
 Point = Tuple[float, float]
 BBox = Tuple[float, float, float, float]   # (x1, y1, x2, y2)
 Quad = Tuple[float, float, float, float,
@@ -10,12 +18,7 @@ Quad = Tuple[float, float, float, float,
 
 
 def bbox_iou(box1: BBox, box2: BBox) -> float:
-    """
-    计算轴对齐边界框（水平框）的 IoU。
-
-    约定：
-        box = (x1, y1, x2, y2)，且 x1 < x2, y1 < y2
-    """
+    """计算轴对齐边界框 IoU"""
     x1, y1, x2, y2 = box1
     x3, y3, x4, y4 = box2
 
@@ -40,18 +43,13 @@ def bbox_iou(box1: BBox, box2: BBox) -> float:
 
 
 def quad_to_polygon(quad: Quad) -> List[Point]:
-    """
-    将 8 维旋转框表示转换为顶点列表：
-        (x1,y1,x2,y2,x3,y3,x4,y4) -> [(x1,y1),...,(x4,y4)]
-    """
+    """8 维旋转框转为顶点列表"""
     x1, y1, x2, y2, x3, y3, x4, y4 = quad
     return [(x1, y1), (x2, y2), (x3, y3), (x4, y4)]
 
 
 def _polygon_area_signed(points: Sequence[Point]) -> float:
-    """
-    多边形有符号面积，>0 表示点的顺序为逆时针，<0 表示顺时针。
-    """
+    """多边形有符号面积，>0 逆时针，<0 顺时针"""
     if len(points) < 3:
         return 0.0
     area = 0.0
@@ -63,7 +61,14 @@ def _polygon_area_signed(points: Sequence[Point]) -> float:
 
 
 def polygon_area(points: Sequence[Point]) -> float:
-    """多边形面积（绝对值）。"""
+    """多边形面积（绝对值），不要求闭合"""
+    if _HAVE_SHAPELY:
+        if len(points) < 3:
+            return 0.0
+        try:
+            return float(ShapelyPolygon(points).area)
+        except Exception:
+            return 0.0
     return abs(_polygon_area_signed(points))
 
 
@@ -72,30 +77,20 @@ def _sutherland_hodgman_clip(
     clip_polygon: List[Point],
 ) -> List[Point]:
     """
-    Sutherland-Hodgman 多边形裁剪算法。
-
-    用 clip_polygon 将 subject_polygon 裁剪，返回二者的交集多边形顶点列表。
-    假设 clip_polygon 为凸多边形（旋转矩形满足这个条件）。
+    Sutherland-Hodgman 多边形裁剪算法
+    用 clip_polygon 对 subject_polygon 裁剪，返回交集多边形顶点列表
     """
     if not subject_polygon or not clip_polygon:
         return []
 
-    # 判断裁剪多边形是顺时针还是逆时针
     area = _polygon_area_signed(clip_polygon)
     is_ccw = area > 0  # >0 表示逆时针
 
     def inside(p: Point, cp1: Point, cp2: Point) -> bool:
-        # 计算叉积 (cp2 - cp1) x (p - cp1)
-        cross = (cp2[0] - cp1[0]) * (p[1] - cp1[1]) - \
-                (cp2[1] - cp1[1]) * (p[0] - cp1[0])
-        # 逆时针多边形，内部在“左侧”；顺时针则相反
+        cross = (cp2[0] - cp1[0]) * (p[1] - cp1[1]) - (cp2[1] - cp1[1]) * (p[0] - cp1[0])
         return cross >= -1e-9 if is_ccw else cross <= 1e-9
 
     def intersection(s: Point, e: Point, cp1: Point, cp2: Point) -> Point:
-        """
-        计算线段 s-e 与直线 cp1-cp2 的交点。
-        这里假设两条线不完全重合；若近似平行，返回 e（影响极小）。
-        """
         x1, y1 = s
         x2, y2 = e
         x3, y3 = cp1
@@ -130,19 +125,70 @@ def _sutherland_hodgman_clip(
     return output_list
 
 
+def _shapely_polygon_union(polys: List[Sequence[Point]]) -> float:
+    """使用 shapely 计算并集面积"""
+    shapes = []
+    for pts in polys:
+        if len(pts) < 3:
+            continue
+        try:
+            shapes.append(ShapelyPolygon(pts))
+        except Exception:
+            continue
+    if not shapes:
+        return 0.0
+    return float(shapely_union(shapes).area)
+
+
+def _polygon_intersection_area(poly1: Sequence[Point], poly2: Sequence[Point]) -> float:
+    """两多边形交集面积，优先 shapely，回退 Sutherland-Hodgman"""
+    if len(poly1) < 3 or len(poly2) < 3:
+        return 0.0
+    if _HAVE_SHAPELY:
+        try:
+            inter = ShapelyPolygon(poly1).intersection(ShapelyPolygon(poly2))
+            return float(inter.area)
+        except Exception:
+            pass
+    inter_poly = _sutherland_hodgman_clip(list(poly1), list(poly2))
+    return polygon_area(inter_poly)
+
+
+def polygon_iou(poly1: Sequence[Point], poly2: Sequence[Point]) -> float:
+    """多边形 IoU（任意顶点数，不要求凸，多边形应闭合有序）"""
+    inter = _polygon_intersection_area(poly1, poly2)
+    if inter <= 0.0:
+        return 0.0
+    area1 = polygon_area(poly1)
+    area2 = polygon_area(poly2)
+    union = area1 + area2 - inter
+    if union <= 0.0:
+        return 0.0
+    return inter / union
+
+
+def polys_union_area(polys: List[Sequence[Point]]) -> float:
+    """多边形集合并集面积"""
+    if _HAVE_SHAPELY:
+        try:
+            return _shapely_polygon_union(polys)
+        except Exception:
+            pass
+    # 回退：逐个累积并集面积（近似）
+    if not polys:
+        return 0.0
+    union = list(polys[0])
+    area = polygon_area(union)
+    for poly in polys[1:]:
+        inter_poly = _sutherland_hodgman_clip(union, list(poly))
+        inter_area = polygon_area(inter_poly)
+        area = area + polygon_area(poly) - inter_area
+        union = _sutherland_hodgman_clip(union, list(poly)) + list(poly)
+    return area
+
+
 def quad_iou(q1: Quad, q2: Quad) -> float:
-    """
-    计算旋转边界框（四点表示）的 IoU。
-
-    输入：
-        q = (x1,y1,x2,y2,x3,y3,x4,y4)
-        顶点顺序默认为图像中顺时针或逆时针排列即可。
-
-    实现：
-        1. 将两个旋转框视为四边形多边形；
-        2. 使用 Sutherland-Hodgman 算法求多边形交集；
-        3. IoU = 交集面积 / 并集面积。
-    """
+    """旋转框 IoU：转多边形后求交并"""
     poly1 = quad_to_polygon(q1)
     poly2 = quad_to_polygon(q2)
 

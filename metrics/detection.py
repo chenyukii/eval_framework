@@ -12,13 +12,13 @@ Quad = Tuple[float, float, float, float, float, float, float, float]
 
 def _extract_count_and_boxes(task: str, value: Any) -> Tuple[int, List[Any]]:
     """
-    从解析后的检测类结果中提取 (count, boxes)。
+    从解析后的检测类结果中提取 (count, boxes)
 
-    适用任务：
-        - 水平区域检测、旋转区域检测：预期格式 (count, box_list)，也容忍直接传 box_list
+    适用任务:
+        - 水平区域检测、旋转区域检测：预期格式 (count, box_list)，也容忍直接给 box_list
         - VQA3：预期 box_list，也兼容 (count, box_list) 写法
 
-    兜底逻辑：
+    兜底逻辑:
         - 无 count 时，用 len(box_list) 作为数量
         - 无效输入时返回 (0, [])
     """
@@ -44,16 +44,16 @@ def _extract_count_and_boxes(task: str, value: Any) -> Tuple[int, List[Any]]:
 
 class DetectionAPMetric(BaseMetric):
     """
-    通用检测 AP 指标（单类），支持：
+    通用检测 AP 指标（单阈值，单类），支持：
         - 水平区域检测（水平框）
         - 旋转区域检测（旋转框）
         - VQA3（水平框）
         - 视觉定位（水平框）
 
-    说明：
-        - 当前模型输出没有置信度，内部将 score 固定为 1
+    说明:
+        - 当前模型输出没有置信度，内部假设 score 固定为 1
         - 因此 PR 曲线只会有一个点，AP 退化为该点的面积
-        - 如果未来有 score，可在计算前按 score 排序，得到标准 PR 曲线
+        - 如果未来有 score，可在计算前对 score 排序，得到标准 PR 曲线
     """
 
     def __init__(
@@ -91,7 +91,7 @@ class DetectionAPMetric(BaseMetric):
         **kwargs: Any,
     ) -> None:
         """
-        按任务提取框列表并累积到当前 image_id：
+        按任务提取框列表并累积到当前 image_id
             - 检测类：从 (count, boxes) 取出 boxes
             - VQA3/视觉定位：直接使用 boxes 列表
         """
@@ -116,11 +116,11 @@ class DetectionAPMetric(BaseMetric):
 
     def compute(self) -> float:
         """
-        在当前 IoU 阈值下计算 AP（score=1 的退化版）：
+        在单一 IoU 阈值下计算 AP（score=1 的退化版）：
             1) 统计正样本数 npos
             2) 展开所有预测（score 固定为 1）
             3) 贪心匹配：每个预测找 IoU 最高且未匹配的 gt，IoU>=阈值记 TP，否则 FP
-            4) 累积 TP/FP 得到单点 PR，再积分求 AP
+            4) 累积 TP/FP 得到单点 PR，再积分得 AP
         """
         npos = sum(len(boxes) for boxes in self.gts.values())
 
@@ -189,7 +189,7 @@ class DetectionAPMetric(BaseMetric):
     @staticmethod
     def _compute_ap(recalls: List[float], precisions: List[float]) -> float:
         """
-        VOC/COCO 风格 AP 计算：后向包络 + 积分。
+        VOC/COCO 风格 AP 计算：后向包络 + 积分
         """
         if not recalls:
             return 0.0
@@ -211,10 +211,40 @@ class DetectionAPMetric(BaseMetric):
         return ap
 
 
+class DetectionMAPMetric(DetectionAPMetric):
+    """
+    多阈值 mAP（COCO 风格），复用 DetectionAPMetric 的数据累积方式
+    - iou_thresholds: 阈值列表，如 [0.5,0.55,...,0.95]
+    - compute: 对每个阈值计算 AP，取平均
+    """
+
+    def __init__(
+        self,
+        name: str,
+        iou_thresholds: List[float],
+        box_mode: str = "bbox",
+        is_aux: bool = False,
+    ) -> None:
+        self.iou_thresholds = iou_thresholds
+        super().__init__(name=name, iou_threshold=0.5, box_mode=box_mode, is_aux=is_aux)
+
+    def compute(self) -> float:
+        if not self.iou_thresholds:
+            return 0.0
+        aps = []
+        for thr in self.iou_thresholds:
+            # 临时替换阈值计算单点 AP
+            self.iou_threshold = thr
+            aps.append(super().compute())
+        # 恢复主阈值避免副作用（非必要，但保持安全）
+        self.iou_threshold = self.iou_thresholds[0]
+        return sum(aps) / len(aps)
+
+
 class DetectionCountAccuracy(BaseMetric):
     """
-    数量准确率：预测数量 == gt 数量 计为正确。
-    适用：水平/旋转区域检测、VQA3。
+    数量准确率：预测数量 == gt 数量 计为正确
+    适用：水平/旋转区域检测、VQA3
     """
 
     def __init__(self, name: str = "count_acc", is_aux: bool = True) -> None:
@@ -254,8 +284,8 @@ class DetectionCountAccuracy(BaseMetric):
 
 class DetectionCountMAE(BaseMetric):
     """
-    数量 MAE：|pred_count - gt_count| 的平均值。
-    适用：水平/旋转区域检测、VQA3。
+    数量 MAE：|pred_count - gt_count| 的平均值
+    适用：水平/旋转区域检测、VQA3
     """
 
     def __init__(self, name: str = "count_mae", is_aux: bool = True) -> None:
@@ -295,15 +325,16 @@ def build_detection_metrics(task: str) -> MetricCollection:
     构建检测类指标集合：
         - 水平 / 旋转区域检测：
             核心：AP@0.5
-            辅助：AP@0.75 + count_acc + count_mae
+            辅助：mAP(0.5:0.95) + AP@0.75 + count_acc + count_mae
         - VQA3：
             核心：AP@0.5
-            辅助：AP@0.75 + count_acc + count_mae
+            辅助：mAP(0.5:0.95) + AP@0.75 + count_acc + count_mae
         - 视觉定位：
             核心：AP@0.5
-            辅助：AP@0.25
+            辅助：AP@0.25 + mAP(0.5:0.95)
     """
     metrics: List[BaseMetric] = []
+    coco_thresholds = [0.5 + 0.05 * i for i in range(10)]  # 0.5:0.05:0.95
 
     if task == "水平区域检测":
         metrics.append(
@@ -312,6 +343,14 @@ def build_detection_metrics(task: str) -> MetricCollection:
                 iou_threshold=0.5,
                 box_mode="bbox",
                 is_aux=False,
+            )
+        )
+        metrics.append(
+            DetectionMAPMetric(
+                name="map",
+                iou_thresholds=coco_thresholds,
+                box_mode="bbox",
+                is_aux=True,
             )
         )
         metrics.append(
@@ -335,6 +374,14 @@ def build_detection_metrics(task: str) -> MetricCollection:
             )
         )
         metrics.append(
+            DetectionMAPMetric(
+                name="map",
+                iou_thresholds=coco_thresholds,
+                box_mode="quad",
+                is_aux=True,
+            )
+        )
+        metrics.append(
             DetectionAPMetric(
                 name="ap_iou_0_75",
                 iou_threshold=0.75,
@@ -352,6 +399,14 @@ def build_detection_metrics(task: str) -> MetricCollection:
                 iou_threshold=0.5,
                 box_mode="bbox",
                 is_aux=False,
+            )
+        )
+        metrics.append(
+            DetectionMAPMetric(
+                name="map",
+                iou_thresholds=coco_thresholds,
+                box_mode="bbox",
+                is_aux=True,
             )
         )
         metrics.append(
@@ -378,6 +433,14 @@ def build_detection_metrics(task: str) -> MetricCollection:
             DetectionAPMetric(
                 name="ap_iou_0_25",
                 iou_threshold=0.25,
+                box_mode="bbox",
+                is_aux=True,
+            )
+        )
+        metrics.append(
+            DetectionMAPMetric(
+                name="map",
+                iou_thresholds=coco_thresholds,
                 box_mode="bbox",
                 is_aux=True,
             )

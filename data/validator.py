@@ -10,17 +10,19 @@ logger = get_logger(__name__)
 
 
 class DataValidator:
-    """数据验证器，负责校验标注数据和模型输出的有效性，并输出结构化日志。"""
+    """数据验证器：校验标注数据和模型输出的有效性，并输出结构化日志"""
 
     def __init__(self, error_log_path: str = "./error_log.txt",
                  invalid_sample_log_path: str = "./invalid_sample_log.txt"):
         self.parser = DataParser()
+        # 全部支持的任务（与 metrics/__init__.py 对齐）
         self.supported_tasks = {
             "图片检索", "图片分类", "VQA1", "VQA2", "VQA3", "计数",
             "简洁图片描述", "详细图片描述",
             "水平区域分类", "旋转区域分类",
             "水平区域检测", "旋转区域检测",
             "视觉定位", "区域描述",
+            "像素分类", "语义分割", "实例分割", "变化检测", "细粒度识别",
             "预留扩展任务",
         }
 
@@ -44,7 +46,7 @@ class DataValidator:
                 f.write("时间戳\t样本源\t错误类型\t错误描述\n")
 
     def _log_error(self, source: str, task: str, error_type: str, error_desc: str):
-        """原有文本日志；保留兼容，同时写结构化日志。"""
+        """原有文本日志；保留兼容，同时写结构化日志"""
         import datetime
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.error_log_path, 'a', encoding='utf-8') as f:
@@ -60,7 +62,7 @@ class DataValidator:
         )
 
     def _log_invalid_sample(self, source: str, error_type: str, error_desc: str):
-        """原有文本日志；保留兼容，同时写结构化日志。"""
+        """原有文本日志；保留兼容，同时写结构化日志"""
         import datetime
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.invalid_sample_log_path, 'a', encoding='utf-8') as f:
