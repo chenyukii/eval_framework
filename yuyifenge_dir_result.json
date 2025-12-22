@@ -1,0 +1,20 @@
+{
+  "metrics": {
+    "point_precision": 0.0,
+    "point_recall": 0.0,
+    "point_f1": 0.0,
+    "count_acc": 0.0,
+    "count_mae": 0.0
+  },
+  "stats": {
+    "num_anno_valid": 6,
+    "num_anno_invalid": 0,
+    "num_model_valid": 0,
+    "num_model_invalid": 6,
+    "num_paired": 0,
+    "num_files_total": 11,
+    "num_files_evaluated": 6,
+    "num_files_missing_model": 5
+  },
+  "details": []
+}

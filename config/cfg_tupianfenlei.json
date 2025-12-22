@@ -1,9 +1,0 @@
-{
-  "task": "图片分类",
-  "annotation_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\raw_anno\\tupianfenlei",
-  "model_output_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\model_output\\tupianfenlei",
-  "pattern": "*.txt",
-  "recursive": false,
-  "calc_aux_metric": true,
-  "output_json": "tupianfenlei_dir_result.json"
-}

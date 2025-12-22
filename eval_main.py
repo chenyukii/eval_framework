@@ -140,7 +140,7 @@ def parse_args() -> argparse.Namespace:
         "-o",
         type=str,
         default=None,
-        help="将评估结果（metrics + stats）保存到指定 JSON 文件路径（命令行会覆盖配置）",
+        help="将评估结果（metrics + stats + details 可选）保存到指定 JSON 文件路径（命令行会覆盖配置）",
     )
 
     # 日志相关
@@ -186,7 +186,7 @@ def main() -> int:
     )
     configure_logging(level=log_level, log_file=log_file)
     set_structured_log_path(structured_log)
-    logger.info("日志初始化完成", extra={"log_level": log_level, "log_file": log_file, "structured_log": structured_log})
+    logger.info("日志初始化完成, extra={'log_level': %s, 'log_file': %s, 'structured_log': %s}", log_level, log_file, structured_log)
 
     # 2. 合并 task（并归一化别名）
     task = normalize_task_name(args.task or config.get("task"))
@@ -221,6 +221,9 @@ def main() -> int:
     if args.no_aux_metric:
         calc_aux_metric = False
 
+    # collect_sample_details：默认 False，仅当配置文件中显式设置为 True 时开启
+    collect_sample_details = bool(config.get("collect_sample_details", False))
+
     # output_json：命令行优先
     output_json = args.output_json or config.get("output_json")
 
@@ -247,11 +250,12 @@ def main() -> int:
             return 1
 
         logger.info(
-            "评估配置（单文件模式） | 任务=%s | 标注=%s | 模型输出=%s | 计算辅助指标=%s",
+            "评估配置（单文件模式）| 任务=%s | 标注=%s | 模型输出=%s | 计算辅助指标=%s | 样本明细=%s",
             task,
             anno_file,
             model_file,
             calc_aux_metric,
+            collect_sample_details,
         )
 
         result: Dict[str, Any] = run_evaluation_for_file(
@@ -259,6 +263,7 @@ def main() -> int:
             annotation_file=anno_file,
             model_output_file=model_file,
             calc_aux_metric=calc_aux_metric,
+            collect_sample_details=collect_sample_details,
         )
 
     # ========== 目录模式 ==========
@@ -272,13 +277,14 @@ def main() -> int:
             return 1
 
         logger.info(
-            "评估配置（目录模式） | 任务=%s | 标注目录=%s | 模型目录=%s | pattern=%s | 递归=%s | 计算辅助指标=%s",
+            "评估配置（目录模式） | 任务=%s | 标注目录=%s | 模型目录=%s | pattern=%s | 递归=%s | 计算辅助指标=%s | 样本明细=%s",
             task,
             anno_dir,
             model_dir,
             pattern,
             recursive,
             calc_aux_metric,
+            collect_sample_details,
         )
 
         result: Dict[str, Any] = run_evaluation_for_dir(
@@ -288,6 +294,7 @@ def main() -> int:
             pattern=pattern,
             recursive=recursive,
             calc_aux_metric=calc_aux_metric,
+            collect_sample_details=collect_sample_details,
         )
 
     metrics: Dict[str, float] = result.get("metrics", {})
@@ -317,7 +324,7 @@ def main() -> int:
                 json.dump(result, f, ensure_ascii=False, indent=2)
             logger.info("已将评估结果保存到：%s", out_path)
         except Exception as e:
-            logger.warning("写入 JSON 文件失败（%s）：%s", out_path, e)
+            logger.warning("写入 JSON 文件失败（路径：%s）：%s", out_path, e)
 
     return 0
 

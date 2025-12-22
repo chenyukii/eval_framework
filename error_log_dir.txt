@@ -1,1 +1,26 @@
 时间戳	样本源	任务类型	错误类型	错误描述
+2025-12-07 21:46:53	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0000192.jpg	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0000214.jpg	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0072476.jpg	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0072593.jpg	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	OpenSARShip_1,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARShip_original_zip\OpenSARShip1\S1A_IW_GRDH_1SDV_20160630T221233_20160630T221258_011946_012696_1AA1\Patch\Other Type_x8927_y12623.tif	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	OpenSARShip_2,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARShip_original_zip\OpenSARShip2\S1A_IW_SLC__1SDV_20150403T112447_20150403T112515_005318_006BBF_A5D4\Patch\Passenger_x52432_y7289.tif	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	OpenSARUrban,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARUrbanDataset\OpenSARUrbanDataset\OpenSARUrban7\patch\SingleBuilding\SingleBuilding_x10310_y12013_Polygon130.tif	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	OpenSARUrban,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARUrbanDataset\OpenSARUrbanDataset\OpenSARUrban10\patch\StorageArea\StorageArea_x3998_y10285_Polygon79.tif	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	OpenSARShip_1,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARShip_original_zip\OpenSARShip1\S1A_IW_SLC__1SDV_20150914T102506_20150914T102536_007710_00AB4B_29F8\Patch\Tanker_x40687_y1086.tif	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	OpenSARUrban,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARUrbanDataset\OpenSARUrbanDataset\OpenSARUrban11\patch\highbuildings\highbuildings_x5822_y14035_Polygon53.tif	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:53	OpenSARUrban,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARUrbanDataset\OpenSARUrbanDataset\OpenSARUrban9\patch\vegetation\vegetation_x15539_y15082_Polygon17.tif	图像分类	任务不支持	不支持的任务类型 图像分类
+2025-12-07 21:46:54	OpenSARShip_1,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARShip_original_zip\OpenSARShip1\S1A_IW_GRDH_1SDV_20160513T221231_20160513T221256_011246_011040_617A\Patch\Dredging_x11971_y12799.tif	图片检索	输出格式错误	模型输出格式错误: invalid
+2025-12-07 21:46:54	OpenSARShip_2,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARShip_original_zip\OpenSARShip2\S1A_IW_GRDH_1SDV_20160131T101646_20160131T101715_009737_00E392_36F7(1)\Patch\Search and Rescue vessel_x10877_y18265.tif	图片检索	输出格式错误	模型输出格式错误: invalid
+2025-12-07 21:46:54	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\val\0004970.png	图片检索	输出格式错误	模型输出格式错误: 1;2;3;4;5
+2025-12-07 21:46:54	OpenSARShip_1,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARShip_original_zip\OpenSARShip1\S1A_IW_SLC__1SDV_20150925T094621_20150925T094649_007870_00AF94_3E64\Patch\Tanker_x3400_y5496.tif	图片检索	输出格式错误	模型输出格式错误: invalid
+2025-12-07 21:46:54	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0075453.jpg	图片检索	输出格式错误	模型输出格式错误: 1;1
+2025-12-07 21:46:54	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0001901.jpg	图片检索	输出格式错误	模型输出格式错误: 1;3
+2025-12-07 21:46:54	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0063576.jpg	图片检索	输出格式错误	模型输出格式错误: 1;2
+2025-12-07 21:46:54	OpenSARShip_1,E:\yaogan\pythonProject\SARdataset\fenlei\OpenSARShip_original_zip\OpenSARShip1\S1A_IW_SLC__1SDV_20160304T095420_20160304T095447_010218_00F169_EF1C\Patch\Other Type_x25130_y865.tif	图片检索	输出格式错误	模型输出格式错误: invalid
+2025-12-07 21:50:50	DFC23,E:\yaogan\pythonProject\SARdataset\shilifenge\DFC23\DFC23_IEEE-DataPort\track2\sar\GF2_Brasilia_-15.8680_-47.9352.tif	语义分割	输出格式错误	模型输出格式错误: <poly><x1>499</x1><y1>499</y1><x2>499</x2</poly>
+2025-12-07 21:50:50	DFC23,E:\yaogan\pythonProject\SARdataset\shilifenge\DFC23\DFC23_IEEE-DataPort\track2\sar\GF2_Brasilia_-15.8681_-47.9277.tif	语义分割	输出格式错误	模型输出格式错误: <poly><x1>499</x1><y1>499</y1><x2>499</x2</poly>
+2025-12-07 21:50:50	DFC23,E:\yaogan\pythonProject\SARdataset\shilifenge\DFC23\DFC23_IEEE-DataPort\track2\sar\GF2_Brasilia_-15.8681_-47.9337.tif	语义分割	输出格式错误	模型输出格式错误: <poly><x1>499</x1><y1>499</y1><x2>499</x2</poly>
+2025-12-07 21:50:50	DFC23,E:\yaogan\pythonProject\SARdataset\shilifenge\DFC23\DFC23_IEEE-DataPort\track2\sar\SV_Portsmouth_50.7971_-1.0919.tif	语义分割	输出格式错误	模型输出格式错误: <poly><x1>100</x1><y1>100</y1><x2>150</x2</poly>
+2025-12-07 21:50:50	DFC23,E:\yaogan\pythonProject\SARdataset\shilifenge\DFC23\DFC23_IEEE-DataPort\track2\sar\SV_SanDiego_32.7318_-117.2311.tif	语义分割	输出格式错误	模型输出格式错误: <poly><x1>500</x1><y1>500</y1><x2>500</x2</poly>
+2025-12-07 21:50:50	DFC23,E:\yaogan\pythonProject\SARdataset\shilifenge\DFC23\DFC23_IEEE-DataPort\track2\sar\SV_SaoLuis_-2.5344_-44.2946.tif	语义分割	输出格式错误	模型输出格式错误: <poly><x1>500</x1><y1>500</y1><x2>500</x2</poly>

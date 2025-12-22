@@ -1,0 +1,82 @@
+{
+  "metrics": {
+    "accuracy": 0.75,
+    "mae": 0.25
+  },
+  "stats": {
+    "num_anno_valid": 8,
+    "num_anno_invalid": 0,
+    "num_model_valid": 8,
+    "num_model_invalid": 0,
+    "num_paired": 8,
+    "num_files_total": 8,
+    "num_files_evaluated": 8,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "0000028_1__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 1.0,
+        "mae": 0.0
+      }
+    },
+    {
+      "sample_id": "0000033__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 1.0,
+        "mae": 0.0
+      }
+    },
+    {
+      "sample_id": "0000036__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 0.0,
+        "mae": 1.0
+      }
+    },
+    {
+      "sample_id": "0000067__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 1.0,
+        "mae": 0.0
+      }
+    },
+    {
+      "sample_id": "0000089__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 1.0,
+        "mae": 0.0
+      }
+    },
+    {
+      "sample_id": "0094407_1__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 1.0,
+        "mae": 0.0
+      }
+    },
+    {
+      "sample_id": "0094408__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 1.0,
+        "mae": 0.0
+      }
+    },
+    {
+      "sample_id": "0096878_2__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 0.0,
+        "mae": 1.0
+      }
+    }
+  ]
+}

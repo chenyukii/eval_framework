@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import glob
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 from .data.loader import DataLoader
 from .evaluator import EvaluationCore
@@ -19,7 +19,7 @@ class FileEvaluationRunner:
     内部：
         - DataLoader 负责：读取文件 + 验证样本 + 配对样本
         - EvaluationCore 负责：解析 gt/model_output + 指标计算
-    输出：指标结果 + 一些样本统计信息
+    输出：指标结果 + 一些样本统计信息 + （可选）每条样本指标
     """
 
     def __init__(
@@ -42,9 +42,14 @@ class FileEvaluationRunner:
         model_output_file: str,
         *,
         calc_aux_metric: bool = True,
+        collect_sample_details: bool = False,
     ) -> Dict[str, Any]:
         """
         对单个标注文件和单个模型输出文件做评估。
+
+        collect_sample_details:
+            - False（默认）：仅返回整体指标，性能最佳
+            - True：额外返回每条配对样本的指标明细，便于定位差样本
         """
         # 1. 加载 + 验证 标注文件
         anno_valid, anno_invalid = self.loader.load_and_validate_annotation_file(
@@ -61,10 +66,12 @@ class FileEvaluationRunner:
             self.loader.pair_samples(anno_valid, model_valid)
 
         # 4. 调用 EvaluationCore，走“原始样本对 -> 解析 -> 指标”这一条链
+        sample_details: Optional[List[Dict[str, Any]]] = [] if collect_sample_details else None
         metrics = self.core.evaluate_raw_paired_samples(
             task=task,
             paired_samples=paired_samples,
             calc_aux_metric=calc_aux_metric,
+            sample_details=sample_details,
         )
 
         # 5. 顺便把一些统计信息也返回，方便后续展示
@@ -93,10 +100,14 @@ class FileEvaluationRunner:
                 model_invalid=len(model_invalid),
             )
 
-        return {
+        result: Dict[str, Any] = {
             "metrics": metrics,
             "stats": stats,
         }
+        if sample_details is not None:
+            result["details"] = sample_details  # 与输入配对顺序一致
+
+        return result
 
 
 def run_evaluation_for_file(
@@ -105,6 +116,7 @@ def run_evaluation_for_file(
     model_output_file: str,
     *,
     calc_aux_metric: bool = True,
+    collect_sample_details: bool = False,
 ) -> Dict[str, Any]:
     """
     单文件便捷函数：大多数情况下外部只用这一行就够了。
@@ -115,6 +127,7 @@ def run_evaluation_for_file(
         annotation_file=annotation_file,
         model_output_file=model_output_file,
         calc_aux_metric=calc_aux_metric,
+        collect_sample_details=collect_sample_details,
     )
 
 
@@ -159,11 +172,13 @@ class DirEvaluationRunner:
         *,
         recursive: bool = False,
         calc_aux_metric: bool = True,
+        collect_sample_details: bool = False,
     ) -> Dict[str, Any]:
         """
-        对一个目录下的多对标注/模型输出文件做“整体评估”。
+        对一个目录下的多对标注 / 模型输出文件做“整体评估”。
+        collect_sample_details=True 时，会收集跨文件的所有配对样本指标（可能较大）。
         """
-        # 1. 列出所有标注文件
+        # 1. 列出所有标注文档
         if recursive:
             glob_pattern = os.path.join(anno_dir, "**", pattern)
             anno_files = glob.glob(glob_pattern, recursive=True)
@@ -189,6 +204,7 @@ class DirEvaluationRunner:
         }
 
         # 4. 逐文件 streaming 更新
+        all_sample_details: Optional[List[Dict[str, Any]]] = [] if collect_sample_details else None
         for anno_file in anno_files:
             model_file = self._find_model_file(anno_file, model_dir)
             if model_file is None:
@@ -229,7 +245,18 @@ class DirEvaluationRunner:
                 paired_samples=paired_samples,
             )
 
-            # 用完就释放 per-file 列表的引用，便于 GC
+            # 如需明细，再额外跑一次（仅该文件的配对样本），避免污染全局 metrics
+            if all_sample_details is not None and paired_samples:
+                file_details: List[Dict[str, Any]] = []
+                self.core.evaluate_raw_paired_samples(
+                    task=task,
+                    paired_samples=paired_samples,
+                    calc_aux_metric=calc_aux_metric,
+                    sample_details=file_details,
+                )
+                all_sample_details.extend(file_details)
+
+            # 用完就释放 per-file 列表引用，便于 GC
             del anno_valid, anno_invalid, model_valid, model_invalid, paired_samples
 
         # 5. 所有文件处理完之后 compute 一次，全局指标
@@ -251,10 +278,14 @@ class DirEvaluationRunner:
                 missing_files=stats["num_files_missing_model"],
             )
 
-        return {
+        result: Dict[str, Any] = {
             "metrics": metric_result,
             "stats": stats,
         }
+        if all_sample_details is not None:
+            result["details"] = all_sample_details  # 顺序为遍历文件顺序内的配对顺序
+
+        return result
 
 
 def run_evaluation_for_dir(
@@ -265,6 +296,7 @@ def run_evaluation_for_dir(
     pattern: str = "*.txt",
     recursive: bool = False,
     calc_aux_metric: bool = True,
+    collect_sample_details: bool = False,
 ) -> Dict[str, Any]:
     """
     目录级便捷函数：
@@ -273,6 +305,7 @@ def run_evaluation_for_dir(
             task="VQA2",
             anno_dir="data/anno",
             model_dir="data/model",
+            collect_sample_details=True,
         )
     """
     runner = DirEvaluationRunner()
@@ -283,4 +316,5 @@ def run_evaluation_for_dir(
         pattern=pattern,
         recursive=recursive,
         calc_aux_metric=calc_aux_metric,
+        collect_sample_details=collect_sample_details,
     )

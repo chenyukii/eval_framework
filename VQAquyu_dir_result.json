@@ -1,0 +1,98 @@
+{
+  "metrics": {
+    "ap_iou_0_5": 0.0,
+    "map": 0.0,
+    "ap_iou_0_75": 0.0,
+    "count_acc": 0.0,
+    "count_mae": 1.43
+  },
+  "stats": {
+    "num_anno_valid": 7,
+    "num_anno_invalid": 0,
+    "num_model_valid": 7,
+    "num_model_invalid": 0,
+    "num_paired": 7,
+    "num_files_total": 7,
+    "num_files_evaluated": 7,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "0000008_1__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000008.jpg",
+      "metrics": {
+        "ap_iou_0_5": 0.0,
+        "map": 0.0,
+        "ap_iou_0_75": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    },
+    {
+      "sample_id": "0000013_1__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000013.jpg",
+      "metrics": {
+        "ap_iou_0_5": 0.0,
+        "map": 0.0,
+        "ap_iou_0_75": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    },
+    {
+      "sample_id": "0000046_1__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000046.png",
+      "metrics": {
+        "ap_iou_0_5": 0.0,
+        "map": 0.0,
+        "ap_iou_0_75": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    },
+    {
+      "sample_id": "0000047_1__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000047.jpg",
+      "metrics": {
+        "ap_iou_0_5": 0.0,
+        "map": 0.0,
+        "ap_iou_0_75": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    },
+    {
+      "sample_id": "0000117_1__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000117.jpg",
+      "metrics": {
+        "ap_iou_0_5": 0.0,
+        "map": 0.0,
+        "ap_iou_0_75": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 2.0
+      }
+    },
+    {
+      "sample_id": "0116560_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0116560.jpg",
+      "metrics": {
+        "ap_iou_0_5": 0.0,
+        "map": 0.0,
+        "ap_iou_0_75": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 2.0
+      }
+    },
+    {
+      "sample_id": "0116578_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0116578.png",
+      "metrics": {
+        "ap_iou_0_5": 0.0,
+        "map": 0.0,
+        "ap_iou_0_75": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 2.0
+      }
+    }
+  ]
+}

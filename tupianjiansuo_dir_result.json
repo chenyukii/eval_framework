@@ -1,17 +1,18 @@
 {
   "metrics": {
-    "retrieval_accuracy": 1.0,
-    "retrieval_recall": 1.0,
-    "retrieval_f1": 1.0
+    "retrieval_accuracy": 0.0,
+    "retrieval_recall": 0.0,
+    "retrieval_f1": 0.0
   },
   "stats": {
-    "num_anno_valid": 100,
-    "num_anno_invalid": 0,
-    "num_model_valid": 100,
-    "num_model_invalid": 0,
-    "num_paired": 100,
-    "num_files_total": 100,
-    "num_files_evaluated": 100,
+    "num_anno_valid": 7,
+    "num_anno_invalid": 1,
+    "num_model_valid": 0,
+    "num_model_invalid": 8,
+    "num_paired": 0,
+    "num_files_total": 8,
+    "num_files_evaluated": 8,
     "num_files_missing_model": 0
-  }
+  },
+  "details": []
 }

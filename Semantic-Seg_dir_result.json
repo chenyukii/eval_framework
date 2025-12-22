@@ -1,0 +1,22 @@
+{
+  "metrics": {
+    "point_precision": 1.0,
+    "point_recall": 1.0,
+    "point_f1": 1.0,
+    "count_acc": 1.0,
+    "count_mae": 0.0,
+    "poly_precision": 1.0,
+    "poly_recall": 1.0,
+    "poly_f1": 1.0
+  },
+  "stats": {
+    "num_anno_valid": 19,
+    "num_anno_invalid": 0,
+    "num_model_valid": 19,
+    "num_model_invalid": 0,
+    "num_paired": 19,
+    "num_files_total": 20,
+    "num_files_evaluated": 20,
+    "num_files_missing_model": 0
+  }
+}

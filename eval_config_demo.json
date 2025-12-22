@@ -1,7 +1,0 @@
-{
-  "task": "VQA2",
-  "annotation_file": "tmp_cfg_vqa2_anno.txt",
-  "model_output_file": "tmp_cfg_vqa2_output.txt",
-  "calc_aux_metric": true,
-  "output_json": "tmp_cfg_vqa2_result.json"
-}

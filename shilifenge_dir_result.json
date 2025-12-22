@@ -1,0 +1,164 @@
+{
+  "metrics": {
+    "point_precision": 0.0,
+    "point_recall": 0.0,
+    "point_f1": 0.0,
+    "count_acc": 0.69,
+    "count_mae": 0.31
+  },
+  "stats": {
+    "num_anno_valid": 13,
+    "num_anno_invalid": 0,
+    "num_model_valid": 13,
+    "num_model_invalid": 0,
+    "num_paired": 13,
+    "num_files_total": 13,
+    "num_files_evaluated": 13,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "GF2_Brasilia_-15.8653_-47.9308_11__0",
+      "source": "DFC23,E:\\yaogan\\pythonProject\\SARdataset\\shilifenge\\DFC23\\DFC23_IEEE-DataPort\\track2\\sar\\GF2_Brasilia_-15.8653_-47.9308.tif",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    },
+    {
+      "sample_id": "GF2_Brasilia_-15.8653_-47.9308_54__0",
+      "source": "DFC23,E:\\yaogan\\pythonProject\\SARdataset\\shilifenge\\DFC23\\DFC23_IEEE-DataPort\\track2\\sar\\GF2_Brasilia_-15.8653_-47.9308.tif",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    },
+    {
+      "sample_id": "GF2_Brasilia_-15.8653_-47.9322_27__0",
+      "source": "DFC23,E:\\yaogan\\pythonProject\\SARdataset\\shilifenge\\DFC23\\DFC23_IEEE-DataPort\\track2\\sar\\GF2_Brasilia_-15.8653_-47.9322.tif",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "GF2_Brasilia_-15.8666_-47.9352_4__0",
+      "source": "DFC23,E:\\yaogan\\pythonProject\\SARdataset\\shilifenge\\DFC23\\DFC23_IEEE-DataPort\\track2\\sar\\GF2_Brasilia_-15.8666_-47.9352.tif",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    },
+    {
+      "sample_id": "P0029_2400_3200_2400_3200__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0029_2400_3200_2400_3200.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "P0029_4800_5600_7200_8000__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0029_4800_5600_7200_8000.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "P0030_1800_2600_8400_9200_6__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0030_1800_2600_8400_9200.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "P0068_1200_2000_3600_4400_1__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0068_1200_2000_3600_4400.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "P0070_3000_3800_2400_3200__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0070_3000_3800_2400_3200.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "P0071_0_800_3000_3800__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0071_0_800_3000_3800.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "P0105_4200_5000_15000_15800_1__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0105_4200_5000_15000_15800.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "P0106_4200_5000_16200_17000_39__0",
+      "source": "DFC23,/disk1/lyw/home/lzm/py/HRSID/image/\\P0106_4200_5000_16200_17000.jpg",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 1.0,
+        "count_mae": 0.0
+      }
+    },
+    {
+      "sample_id": "SV_Barcelona_41.3773_2.1445_362__0",
+      "source": "DFC23,E:\\yaogan\\pythonProject\\SARdataset\\shilifenge\\DFC23\\DFC23_IEEE-DataPort\\track2\\sar\\SV_Barcelona_41.3773_2.1445.tif",
+      "metrics": {
+        "point_precision": 0.0,
+        "point_recall": 0.0,
+        "point_f1": 0.0,
+        "count_acc": 0.0,
+        "count_mae": 1.0
+      }
+    }
+  ]
+}

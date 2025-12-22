@@ -1,0 +1,10 @@
+{
+  "task": "语义分割",
+  "annotation_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\eval_dataset\\test\\ann\\Semantic-Seg",
+  "model_output_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\eval_dataset\\test\\modelout\\Semantic-Seg",
+  "pattern": "*.txt",
+  "recursive": false,
+  "calc_aux_metric": true,
+  "collect_sample_details": false,
+  "output_json": "Semantic-Seg_dir_result.json"
+}

@@ -26,7 +26,7 @@ def _to_label_set(value: Any) -> Set[str]:
     if isinstance(value, (list, tuple, set)):
         result = set()
         for v in value:
-            s = str(v).strip()
+            s = str(v).strip().lower()
             if s:
                 result.add(s)
         return result

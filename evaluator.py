@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .metrics import build_task_metrics
-from .data.parser import DataParser  # 如果你的路径是 data/parser.py，这里改成相应 import
+from .data.parser import DataParser  # 如果你的路径是 data/parser.py，这里改成相对 import
 
 
 class EvaluationCore:
@@ -20,10 +20,10 @@ class EvaluationCore:
         - 读文件 / 写文件
         - 日志记录
         - 配对逻辑（sample_id/source 匹配）
-        - 文本 / 框 等字段的格式验证
+        - 文本 / 图像等字段的格式验证
 
     这些职责由 DataLoader / DataValidator / DataParser 等模块完成，
-    这里只假设你已经拿到了“能被 DataParser 正确解析”的样本。
+    这里只假设你已经拿到了“能被 DataParser 正确解析”的样本对。
     """
 
     def __init__(self) -> None:
@@ -38,6 +38,7 @@ class EvaluationCore:
         pairs: Sequence[Dict[str, Any]],
         *,
         calc_aux_metric: bool = True,
+        sample_details: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, float]:
         """
         对一组“已配对 + 已解析”的样本做评估。
@@ -54,8 +55,16 @@ class EvaluationCore:
                     - "sample_id": 样本 ID
                     - "source":    数据源（文件名 / 图片名）
             calc_aux_metric:
-                是否计算辅助指标（目前只对“图片检索”任务起作用，
+                是否计算辅助指标（目前只对“图片检索”任务起作用；
                 其他任务的辅助指标由各自 build_xxx_metrics 决定）。
+            sample_details:
+                若传入空列表，将按输入顺序记录每条样本的单独指标，用于后续定位
+                哪些样本表现差。形如：
+                [
+                  {"sample_id": "...", "source": "...", "metrics": {...}},
+                  ...
+                ]
+                顺序与 pairs 顺序一致。
 
         Returns:
             指标结果字典，例如：
@@ -70,7 +79,7 @@ class EvaluationCore:
             # 没有样本，直接返回空指标字典
             return {}
 
-        # 1. 根据任务构建指标集合（分类 / 检测 / 检索 / 描述）
+        # 1. 根据任务构建指标集合（分类 / 检测 / 检索 / 描述 / 像素级等）
         metric_collection = build_task_metrics(task, calc_aux_metric=calc_aux_metric)
 
         # 2. 遍历每条样本，调用 metrics.update(...)
@@ -79,7 +88,7 @@ class EvaluationCore:
                 # 如果传进来的结构不符合要求，直接抛异常，
                 # 让上层在开发阶段就能发现问题。
                 raise KeyError(
-                    "每个 pair 至少需要包含 'gt' 和 'pred' 字段，"
+                    "每个 pair 至少需要包含 'gt' 和 'pred' 字段；"
                     f"当前 pair: {pair}"
                 )
 
@@ -95,6 +104,26 @@ class EvaluationCore:
                 source=source,
             )
 
+            # 如果需要样本级指标，单独构建一次同任务的 MetricCollection，仅喂这一条
+            if sample_details is not None:
+                per_sample_metrics = build_task_metrics(
+                    task,
+                    calc_aux_metric=calc_aux_metric,
+                )
+                per_sample_metrics.update(
+                    gt=gt,
+                    pred=pred,
+                    task=task,
+                    source=source,
+                )
+                sample_details.append(
+                    {
+                        "sample_id": pair.get("sample_id"),
+                        "source": source,
+                        "metrics": per_sample_metrics.compute_all(),
+                    }
+                )
+
         # 3. 计算所有指标结果（0~1 范围，保留两位小数）
         return metric_collection.compute_all()
 
@@ -106,6 +135,7 @@ class EvaluationCore:
         paired_samples: Sequence[Tuple[Dict[str, Any], Dict[str, Any]]],
         *,
         calc_aux_metric: bool = True,
+        sample_details: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, float]:
         """
         对一组“原始样本对”做评估（一次性吃完的版本）：
@@ -154,6 +184,8 @@ class EvaluationCore:
                     "pred": parsed_pred,
                     # source 优先用标注里的，没有就用模型输出里的
                     "source": anno_sample.get("source") or model_sample.get("source"),
+                    "sample_id": anno_sample.get("sample_id") or model_sample.get("sample_id"),
+                    "task": sample_task,
                 }
             )
 
@@ -162,6 +194,7 @@ class EvaluationCore:
             task=task,
             pairs=parsed_pairs,
             calc_aux_metric=calc_aux_metric,
+            sample_details=sample_details,
         )
 
     # ========= 下面是“流式 / 可复用 metrics”接口 =========
@@ -194,10 +227,8 @@ class EvaluationCore:
         关键：对给定的 MetricCollection 做“流式更新”。
 
         - 不自己 new metrics（由外部传进来）
-        - 不构建 parsed_pairs 大列表
+        - 不构造 parsed_pairs 大列表
         - 只负责：遍历每个 (anno_sample, model_sample)，解析后调用 metrics.update(...)
-
-        这个方法是未来“目录级评估 / 批量评估”的基础。
         """
         if not paired_samples:
             return
@@ -220,7 +251,7 @@ class EvaluationCore:
 
             parsed_gt = self.parser.parse_gt(sample_task, raw_gt)
             if parsed_gt is None:
-                # DataValidator 前面一般已经过滤了非法样本，这里再防御性跳过一层
+                # DataValidator 前面一般已经过滤了非法样本，这里再防御性跳过一次
                 continue
 
             parsed_pred = self.parser.parse_model_output(sample_task, raw_output)

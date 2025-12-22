@@ -40,7 +40,7 @@ class DataParser:
         try:
             for block in block_pat.findall(value_str):
                 nums = [float(n) for n in self.num_pattern.findall(block)]
-                if len(nums) < 6 or len(nums) % 2 != 0:
+                if len(nums) < 2 or len(nums) % 2 != 0:
                     return None  # 坐标数不足或奇数，判无效
                 poly: Polygon = []
                 for i in range(0, len(nums), 2):
@@ -61,12 +61,24 @@ class DataParser:
 
         try:
             # 图像/分类/VQA/检测保留原逻辑
+            # if task in ["图片检索"]:
+            #     return [int(num.strip()) for num in value_str.split(',')]
             if task in ["图片检索"]:
-                return [int(num.strip()) for num in value_str.split(',')]
+                # 支持逗号/分号分隔，过滤空串和非数字
+                raw_parts = re.split(r"[;,]", value_str)
+                nums = []
+                for part in raw_parts:
+                    part = part.strip()
+                    if not part:
+                        continue
+                    if not part.isdigit():
+                        return None  # 非数字视为格式错误
+                    nums.append(int(part))
+                return nums
             elif task in ["图片分类"]:
                 return [cls.strip() for cls in value_str.split(';') if cls.strip()]
             elif task in ["VQA1"]:
-                return value_str
+                return value_str.strip().lower()
             elif task in ["VQA2", "计数"]:
                 if self.number_pattern.match(value_str):
                     return int(value_str)

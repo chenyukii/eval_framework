@@ -1,0 +1,91 @@
+{
+  "metrics": {
+    "accuracy": 0.0,
+    "macro_f1": 0.0,
+    "macro_recall": 0.0
+  },
+  "stats": {
+    "num_anno_valid": 8,
+    "num_anno_invalid": 0,
+    "num_model_valid": 8,
+    "num_model_invalid": 0,
+    "num_paired": 8,
+    "num_files_total": 8,
+    "num_files_evaluated": 8,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_05064_2__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_05064.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_20889_7__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_20889.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_21522_28__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_21522.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_21522_39__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_KAS_FSI_017031_E114.1_N22.3_20191104_L1A_HH_L10000000006_00000_21522.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_05632_01626_4__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_05632_01626.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_05632_13821_4__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_05632_13821.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_05632_21138_1__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_05632_21138.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_06144_01626_1__0",
+      "source": "FAIR-CSARV1.0 /disk1/lyw/home/lzm/py/extracted/trainval/PNGImages/GF3_SAY_FSI_037634_E115.5_N21.9_20231003_L1A_HV_L10000000042_06144_01626.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    }
+  ]
+}

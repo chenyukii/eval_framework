@@ -1,18 +1,120 @@
 {
   "metrics": {
-    "cider": 10.0,
-    "rouge_l": 1.0,
-    "bleu_4": 1.0,
-    "meteor": 1.0
+    "cider": 0.06,
+    "rouge_l": 0.06,
+    "bleu_4": 0.0,
+    "meteor": 0.04
   },
   "stats": {
-    "num_anno_valid": 100,
+    "num_anno_valid": 10,
     "num_anno_invalid": 0,
-    "num_model_valid": 100,
+    "num_model_valid": 10,
     "num_model_invalid": 0,
-    "num_paired": 100,
-    "num_files_total": 100,
-    "num_files_evaluated": 100,
+    "num_paired": 10,
+    "num_files_total": 10,
+    "num_files_evaluated": 10,
     "num_files_missing_model": 0
-  }
+  },
+  "details": [
+    {
+      "sample_id": "0000012__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000012.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.0,
+        "bleu_4": 0.0,
+        "meteor": 0.03
+      }
+    },
+    {
+      "sample_id": "0000016__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000016.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.2,
+        "bleu_4": 0.0,
+        "meteor": 0.08
+      }
+    },
+    {
+      "sample_id": "0000017__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000017.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.18,
+        "bleu_4": 0.0,
+        "meteor": 0.09
+      }
+    },
+    {
+      "sample_id": "0000019__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000019.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.0,
+        "bleu_4": 0.0,
+        "meteor": 0.03
+      }
+    },
+    {
+      "sample_id": "0000036__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000036.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.05,
+        "bleu_4": 0.0,
+        "meteor": 0.02
+      }
+    },
+    {
+      "sample_id": "0000045__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000045.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.12,
+        "bleu_4": 0.0,
+        "meteor": 0.05
+      }
+    },
+    {
+      "sample_id": "0000216__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000216.png",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.0,
+        "bleu_4": 0.0,
+        "meteor": 0.0
+      }
+    },
+    {
+      "sample_id": "0000219__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/val/0000219.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.0,
+        "bleu_4": 0.0,
+        "meteor": 0.01
+      }
+    },
+    {
+      "sample_id": "0000272__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000272.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.07,
+        "bleu_4": 0.0,
+        "meteor": 0.01
+      }
+    },
+    {
+      "sample_id": "0000352__0",
+      "source": "SARDet-100K,/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000352.jpg",
+      "metrics": {
+        "cider": 0.0,
+        "rouge_l": 0.0,
+        "bleu_4": 0.0,
+        "meteor": 0.07
+      }
+    }
+  ]
 }

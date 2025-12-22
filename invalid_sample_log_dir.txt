@@ -1,7 +1,2 @@
 时间戳	样本源	错误类型	错误描述
-2025-11-30 17:53:47	/disk1/lyw/home/ljs/DroneVehicle/testimgr/00157.jpg	字段缺失	缺少必填字段 frames
-2025-11-30 17:53:47	/disk1/lyw/home/ljs/DroneVehicle/testimgr/02033.jpg	字段缺失	缺少必填字段 frames
-2025-11-30 17:53:47	/disk1/lyw/home/ljs/DroneVehicle/testimgr/02033.jpg	字段缺失	缺少必填字段 frames
-2025-11-30 17:53:47	/disk1/lyw/home/ljs/DroneVehicle/testimgr/02756.jpg	字段缺失	缺少必填字段 frames
-2025-11-30 17:53:47	/disk1/lyw/home/ljs/DroneVehicle/testimgr/02756.jpg	字段缺失	缺少必填字段 frames
-2025-11-30 17:53:47	/disk1/lyw/home/ljs/DroneVehicle/testimgr/05654.jpg	字段缺失	缺少必填字段 frames
+2025-12-07 21:46:54	SARDet-100K,E:\yaogan\pythonProject\SARdataset\mubiaojishu\SARLANG-1M\SARDet-100K\Images\train123\train\0075453.jpg	字段缺失	缺少必填字段 gt

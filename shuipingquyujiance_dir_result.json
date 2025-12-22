@@ -1,0 +1,91 @@
+{
+  "metrics": {
+    "accuracy": 0.0,
+    "macro_f1": 0.0,
+    "macro_recall": 0.0
+  },
+  "stats": {
+    "num_anno_valid": 8,
+    "num_anno_invalid": 0,
+    "num_model_valid": 8,
+    "num_model_invalid": 0,
+    "num_paired": 8,
+    "num_files_total": 8,
+    "num_files_evaluated": 8,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "0000040_4__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\train123\\train\\0000040.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "000007__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\SARdata\\Official-SSDD-OPEN\\BBox_SSDD\\coco_style\\images\\train\\000007.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "000019_1__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\SARdata\\Official-SSDD-OPEN\\BBox_SSDD\\coco_style\\images\\test\\000019.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0000208_1__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\train123\\train\\0000208.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "000073__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\SARdata\\Official-SSDD-OPEN\\BBox_SSDD\\coco_style\\images\\train\\000073.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "000080__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\SARdata\\Official-SSDD-OPEN\\BBox_SSDD\\coco_style\\images\\train\\000080.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "000091__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\SARdata\\Official-SSDD-OPEN\\BBox_SSDD\\coco_style\\images\\test_offshore\\000091.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0002086_5__0",
+      "source": "E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\val\\0002086.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    }
+  ]
+}

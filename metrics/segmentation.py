@@ -1,235 +1,182 @@
 # metrics/segmentation.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Set
 
 from .base import BaseMetric, MetricCollection
 from .classification import build_classification_metrics
-from ..utils.iou import polygon_iou, polys_union_area
 
 Polygon = Sequence[Tuple[float, float]]
 
 
+# ================= 基础工具函数 =================
 def _to_polygon_list(value: Any) -> List[Polygon]:
-    """将解析后的多边形结果规整为列表"""
+    """
+    将解析后的多边形/点结果规整为“多边形列表”。
+    - 输入：解析后的 value，通常来自 DataParser 的输出，可能是 list/tuple。
+    - 规则：元素必须是 list/tuple 且长度 >= 1 才被视作一个 poly；其它情况丢弃。
+    - 输出：List[Polygon]，列表中的每个元素代表一个 <poly> 集合。
+    """
     if value is None:
         return []
     if isinstance(value, list):
-        # 确保元素都是序列
         result: List[Polygon] = []
         for item in value:
-            if isinstance(item, (list, tuple)) and len(item) >= 3:
+            if isinstance(item, (list, tuple)) and len(item) >= 1:
                 result.append(tuple(item))
         return result
     return []
 
 
-class UnionIoUMetric(BaseMetric):
+def _poly_to_point_set(poly: Polygon) -> Set[Tuple[float, float]]:
     """
-    样本级并集 IoU（用于语义分割/变化检测）
-    计算每个样本 gt 与 pred 多边形集合的并集 IoU，再对样本求平均
+    把单个 polygon 转为点集合，方便后续集合运算（交/并等）。
     """
+    return {tuple(pt) for pt in poly}
 
+
+def _point_set_iou(a: Polygon, b: Polygon) -> float:
+    """
+    基于点集合的 IoU（交并比）：
+        IoU = |A ∩ B| / |A ∪ B|
+    - 若并集为空（极端情况），返回 0.0。
+    """
+    set_a = _poly_to_point_set(a)
+    set_b = _poly_to_point_set(b)
+    if not set_a and not set_b:
+        return 0.0
+    inter = len(set_a & set_b)
+    union = len(set_a | set_b)
+    return inter / union if union else 0.0
+
+
+def _greedy_match_polygons(
+    gt_polys: List[Polygon],
+    pred_polys: List[Polygon],
+    iou_thresh: float,
+) -> Tuple[int, int, int]:
+    """
+    逐 polygon 进行贪心匹配，统计 TP/FP/FN：
+        1) 遍历每个 pred，多边形与所有“尚未匹配”的 gt 计算 IoU（基于点集合）。
+        2) 找到 IoU 最高的 gt，若 IoU >= 阈值，则记为 TP，并标记该 gt 已匹配。
+           否则该 pred 记为 FP。
+        3) 所有未被匹配的 gt 计为 FN。
+    返回: (tp, fp, fn)
+    - 逻辑类似检测中的框匹配，但相似度是“点集合 IoU”。
+    """
+    matched_gt = set()
+    tp = fp = 0
+
+    for pred in pred_polys:
+        best_iou = 0.0
+        best_idx = -1
+        for idx, gt in enumerate(gt_polys):
+            if idx in matched_gt:
+                continue
+            iou = _point_set_iou(gt, pred)
+            if iou > best_iou:
+                best_iou = iou
+                best_idx = idx
+        if best_iou >= iou_thresh and best_idx >= 0:
+            tp += 1
+            matched_gt.add(best_idx)
+        else:
+            fp += 1
+
+    fn = len(gt_polys) - len(matched_gt)
+    return tp, fp, fn
+
+
+# ================= 点级指标（原有逻辑，保留） =================
+class PointSetPrecision(BaseMetric):
+    """
+    点集合精度：把所有 <poly> 的点合并为一个大集合，
+    precision = |GT∩Pred| / |Pred|。
+    """
     def reset(self) -> None:
-        self.ious: List[float] = []
+        self.values: List[float] = []
 
-    def update(
-        self,
-        *,
-        gt: Any,
-        pred: Any,
-        task: Optional[str] = None,
-        source: Optional[str] = None,
-        **kwargs: Any,
-    ) -> None:
-        gt_polys = _to_polygon_list(gt)
-        pred_polys = _to_polygon_list(pred)
-        if not gt_polys and not pred_polys:
-            return  # 双空不计入
-        union_area = polys_union_area(list(gt_polys) + list(pred_polys))
-        if union_area <= 0.0:
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
+        gt_pts = {tuple(pt) for poly in _to_polygon_list(gt) for pt in poly}
+        pred_pts = {tuple(pt) for poly in _to_polygon_list(pred) for pt in poly}
+        # 双空样本不计入
+        if not gt_pts and not pred_pts:
             return
-        inter_area = (
-            polys_union_area(gt_polys)
-            + polys_union_area(pred_polys)
-            - union_area
-        )
-        iou = inter_area / union_area if union_area > 0 else 0.0
-        self.ious.append(max(iou, 0.0))
+        if not pred_pts:
+            self.values.append(0.0)
+            return
+        inter = len(gt_pts & pred_pts)
+        self.values.append(inter / len(pred_pts))
 
     def compute(self) -> float:
-        if not self.ious:
+        if not self.values:
             return 0.0
-        return sum(self.ious) / len(self.ious)
+        return sum(self.values) / len(self.values)
 
 
-class DiceMetric(BaseMetric):
-    """样本级 Dice 系数（2*inter/(sum areas))"""
-
+class PointSetRecall(BaseMetric):
+    """
+    点集合召回：把所有点合并后，
+    recall = |GT∩Pred| / |GT|。
+    """
     def reset(self) -> None:
-        self.dices: List[float] = []
+        self.values: List[float] = []
 
-    def update(
-        self,
-        *,
-        gt: Any,
-        pred: Any,
-        task: Optional[str] = None,
-        source: Optional[str] = None,
-        **kwargs: Any,
-    ) -> None:
-        gt_polys = _to_polygon_list(gt)
-        pred_polys = _to_polygon_list(pred)
-        if not gt_polys and not pred_polys:
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
+        gt_pts = {tuple(pt) for poly in _to_polygon_list(gt) for pt in poly}
+        pred_pts = {tuple(pt) for poly in _to_polygon_list(pred) for pt in poly}
+        if not gt_pts and not pred_pts:
             return
-        area_gt = polys_union_area(gt_polys)
-        area_pred = polys_union_area(pred_polys)
-        if area_gt <= 0.0 and area_pred <= 0.0:
+        if not gt_pts:
+            self.values.append(0.0)
             return
-        inter_area = area_gt + area_pred - polys_union_area(gt_polys + pred_polys)
-        denom = area_gt + area_pred
-        dice = 2 * inter_area / denom if denom > 0 else 0.0
-        self.dices.append(max(dice, 0.0))
+        inter = len(gt_pts & pred_pts)
+        self.values.append(inter / len(gt_pts))
 
     def compute(self) -> float:
-        if not self.dices:
+        if not self.values:
             return 0.0
-        return sum(self.dices) / len(self.dices)
+        return sum(self.values) / len(self.values)
 
 
-class PolyAPMetric(BaseMetric):
+class PointSetF1(BaseMetric):
     """
-    多边形检测/实例分割 mAP（退化单类，score=1）
-    - 支持多阈值（默认 COCO 0.5:0.05:0.95），compute 返回均值
-    - 可用于输出单点 AP（thresholds=[0.5] 等）
+    点集合 F1：把所有点合并后，
+    F1 = 2 * |GT∩Pred| / (|GT| + |Pred|)。
     """
-
-    def __init__(
-        self,
-        name: str,
-        iou_thresholds: List[float],
-        is_aux: bool = False,
-    ) -> None:
-        self.iou_thresholds = iou_thresholds
-        super().__init__(name=name, is_aux=is_aux)
-
     def reset(self) -> None:
-        self.gts: Dict[str, List[Polygon]] = {}
-        self.preds: Dict[str, List[Polygon]] = {}
+        self.values: List[float] = []
 
-    def update(
-        self,
-        *,
-        gt: Any,
-        pred: Any,
-        task: Optional[str] = None,
-        source: Optional[str] = None,
-        **kwargs: Any,
-    ) -> None:
-        if source is None:
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
+        gt_pts = {tuple(pt) for poly in _to_polygon_list(gt) for pt in poly}
+        pred_pts = {tuple(pt) for poly in _to_polygon_list(pred) for pt in poly}
+        if not gt_pts and not pred_pts:
             return
-        gt_polys = _to_polygon_list(gt)
-        pred_polys = _to_polygon_list(pred)
-        self.gts.setdefault(source, []).extend(gt_polys)
-        self.preds.setdefault(source, []).extend(pred_polys)
-
-    def _compute_ap_single(self, thr: float) -> float:
-        npos = sum(len(v) for v in self.gts.values())
-        detections: List[Tuple[str, Polygon]] = []
-        for img_id, polys in self.preds.items():
-            for poly in polys:
-                detections.append((img_id, poly))
-
-        if npos == 0 or not detections:
-            return 0.0
-
-        gt_matched: Dict[str, List[bool]] = {img: [False] * len(polys) for img, polys in self.gts.items()}
-        tp: List[int] = []
-        fp: List[int] = []
-
-        # score 固定为 1，无需排序
-        for image_id, pred_poly in detections:
-            gt_polys = self.gts.get(image_id, [])
-            if image_id not in gt_matched:
-                gt_matched[image_id] = [False] * len(gt_polys)
-
-            best_iou = 0.0
-            best_idx = -1
-            for idx, gt_poly in enumerate(gt_polys):
-                if gt_matched[image_id][idx]:
-                    continue
-                iou = polygon_iou(pred_poly, gt_poly)
-                if iou > best_iou:
-                    best_iou = iou
-                    best_idx = idx
-
-            if best_iou >= thr and best_idx >= 0:
-                gt_matched[image_id][best_idx] = True
-                tp.append(1)
-                fp.append(0)
-            else:
-                tp.append(0)
-                fp.append(1)
-
-        # 累积 PR 曲线（单点，但仍按 VOC 风格积分）
-        tp_cum: List[int] = []
-        fp_cum: List[int] = []
-        c_tp = 0
-        c_fp = 0
-        for t, f in zip(tp, fp):
-            c_tp += t
-            c_fp += f
-            tp_cum.append(c_tp)
-            fp_cum.append(c_fp)
-
-        recalls: List[float] = []
-        precisions: List[float] = []
-        for t_c, f_c in zip(tp_cum, fp_cum):
-            recall = t_c / npos
-            precision = t_c / max(t_c + f_c, 1e-8)
-            recalls.append(recall)
-            precisions.append(precision)
-
-        return self._voc_ap(recalls, precisions)
-
-    @staticmethod
-    def _voc_ap(recalls: List[float], precisions: List[float]) -> float:
-        """VOC/COCO 风格 AP：后向包络 + 积分"""
-        if not recalls:
-            return 0.0
-        mrec = [0.0] + recalls + [1.0]
-        mpre = [0.0] + precisions + [0.0]
-        for i in range(len(mpre) - 2, -1, -1):
-            mpre[i] = max(mpre[i], mpre[i + 1])
-        ap = 0.0
-        for i in range(1, len(mrec)):
-            if mrec[i] != mrec[i - 1]:
-                ap += (mrec[i] - mrec[i - 1]) * mpre[i]
-        return ap
+        denom = len(gt_pts) + len(pred_pts)
+        if denom == 0:
+            self.values.append(0.0)
+            return
+        inter = len(gt_pts & pred_pts)
+        self.values.append(2 * inter / denom)
 
     def compute(self) -> float:
-        if not self.iou_thresholds:
+        if not self.values:
             return 0.0
-        aps = [self._compute_ap_single(thr) for thr in self.iou_thresholds]
-        return sum(aps) / len(aps)
+        return sum(self.values) / len(self.values)
 
 
+# ================= 数量辅助指标（原有逻辑，保留） =================
 class CountAccuracy(BaseMetric):
-    """数量准确率：len(pred) == len(gt)"""
-
+    """数量准确率：len(pred_polys) == len(gt_polys) 记为正确。"""
     def reset(self) -> None:
         self.correct = 0
         self.total = 0
 
-    def update(
-        self,
-        *,
-        gt: Any,
-        pred: Any,
-        task: Optional[str] = None,
-        source: Optional[str] = None,
-        **kwargs: Any,
-    ) -> None:
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
         gt_polys = _to_polygon_list(gt)
         pred_polys = _to_polygon_list(pred)
         if not gt_polys and not pred_polys:
@@ -245,20 +192,12 @@ class CountAccuracy(BaseMetric):
 
 
 class CountMAE(BaseMetric):
-    """数量 MAE：|len(pred) - len(gt)| 的平均"""
-
+    """数量 MAE：|len(pred_polys) - len(gt_polys)| 的平均值。"""
     def reset(self) -> None:
         self.errors: List[float] = []
 
-    def update(
-        self,
-        *,
-        gt: Any,
-        pred: Any,
-        task: Optional[str] = None,
-        source: Optional[str] = None,
-        **kwargs: Any,
-    ) -> None:
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
         gt_polys = _to_polygon_list(gt)
         pred_polys = _to_polygon_list(pred)
         if not gt_polys and not pred_polys:
@@ -271,32 +210,133 @@ class CountMAE(BaseMetric):
         return sum(self.errors) / len(self.errors)
 
 
+# ================= 新增：集合级匹配指标（逐 poly 匹配） =================
+class PolyMatchPrecision(BaseMetric):
+    """
+    Polygon 集合级精度：
+        - 把每个 <poly> 视为一个“集合”，基于点集合 IoU 做贪心匹配。
+        - IoU >= 阈值 视为命中（TP），否则为 FP。
+        - Precision = TP / (TP + FP)，跨样本累积 TP/FP 后统一计算。
+    """
+    def __init__(self, name: str = "poly_precision", iou_thresh: float = 0.5, is_aux: bool = False) -> None:
+        self.iou_thresh = iou_thresh
+        super().__init__(name=name, is_aux=is_aux)
+
+    def reset(self) -> None:
+        self.tp = 0
+        self.fp = 0
+
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
+        gt_polys = _to_polygon_list(gt)
+        pred_polys = _to_polygon_list(pred)
+        # 双空样本不计入
+        if not gt_polys and not pred_polys:
+            return
+        tp, fp, _ = _greedy_match_polygons(gt_polys, pred_polys, self.iou_thresh)
+        self.tp += tp
+        self.fp += fp
+
+    def compute(self) -> float:
+        denom = self.tp + self.fp
+        if denom == 0:
+            return 0.0
+        return self.tp / denom
+
+
+class PolyMatchRecall(BaseMetric):
+    """
+    Polygon 集合级召回：
+        - 同一套匹配逻辑，召回 = TP / (TP + FN)，跨样本累积 TP/FN。
+    """
+    def __init__(self, name: str = "poly_recall", iou_thresh: float = 0.5, is_aux: bool = False) -> None:
+        self.iou_thresh = iou_thresh
+        super().__init__(name=name, is_aux=is_aux)
+
+    def reset(self) -> None:
+        self.tp = 0
+        self.fn = 0
+
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
+        gt_polys = _to_polygon_list(gt)
+        pred_polys = _to_polygon_list(pred)
+        if not gt_polys and not pred_polys:
+            return
+        tp, _, fn = _greedy_match_polygons(gt_polys, pred_polys, self.iou_thresh)
+        self.tp += tp
+        self.fn += fn
+
+    def compute(self) -> float:
+        denom = self.tp + self.fn
+        if denom == 0:
+            return 0.0
+        return self.tp / denom
+
+
+class PolyMatchF1(BaseMetric):
+    """
+    Polygon 集合级 F1：
+        - 基于同一套 TP/FP/FN 计数，F1 = 2TP / (2TP + FP + FN)。
+        - 适合衡量“多集合匹配”综合表现。
+    """
+    def __init__(self, name: str = "poly_f1", iou_thresh: float = 0.5, is_aux: bool = False) -> None:
+        self.iou_thresh = iou_thresh
+        super().__init__(name=name, is_aux=is_aux)
+
+    def reset(self) -> None:
+        self.tp = 0
+        self.fp = 0
+        self.fn = 0
+
+    def update(self, *, gt: Any, pred: Any, task: Optional[str] = None,
+               source: Optional[str] = None, **kwargs: Any) -> None:
+        gt_polys = _to_polygon_list(gt)
+        pred_polys = _to_polygon_list(pred)
+        if not gt_polys and not pred_polys:
+            return
+        tp, fp, fn = _greedy_match_polygons(gt_polys, pred_polys, self.iou_thresh)
+        self.tp += tp
+        self.fp += fp
+        self.fn += fn
+
+    def compute(self) -> float:
+        denom = 2 * self.tp + self.fp + self.fn
+        if denom == 0:
+            return 0.0
+        return 2 * self.tp / denom
+
+
+# ================= 指标构建入口 =================
 def build_segmentation_metrics(task: str) -> MetricCollection:
     """
-    像素级任务指标集合：
-    - 语义分割/变化检测：miou(核心) + dice/map/ap@0.5/ap@0.75
-    - 实例分割：map(核心) + ap@0.5/ap@0.75/count_acc/count_mae
-    - 像素分类/细粒度识别：复用分类指标
+    像素级任务指标集合构建：
+        - 语义分割 / 实例分割 / 变化检测：
+            * 保留原有的“点级” Precision/Recall/F1（把所有点合并为一个集合）
+            * 保留原有数量辅助指标 count_acc / count_mae
+            * 新增“集合级”匹配指标 poly_precision / poly_recall / poly_f1（逐 poly 贪心匹配，点集 IoU）
+        - 像素分类 / 细粒度识别：
+            * 复用分类任务的指标
     """
     task = task or ""
-    # 分类型像素任务复用
+
+    # 分类型像素任务复用分类指标
     if task in {"像素分类", "细粒度识别"}:
-        return build_classification_metrics("图片分类")  # 复用同一指标组合
+        return build_classification_metrics("图片分类")
 
     metrics: List[BaseMetric] = []
-    coco_thresholds = [0.5 + 0.05 * i for i in range(10)]  # 0.5:0.05:0.95
 
-    if task in {"语义分割", "变化检测"}:
-        metrics.append(UnionIoUMetric(name="miou", is_aux=False))
-        metrics.append(DiceMetric(name="dice", is_aux=True))
-        metrics.append(PolyAPMetric(name="map", iou_thresholds=coco_thresholds, is_aux=True))
-        metrics.append(PolyAPMetric(name="ap_iou_0_5", iou_thresholds=[0.5], is_aux=True))
-        metrics.append(PolyAPMetric(name="ap_iou_0_75", iou_thresholds=[0.75], is_aux=True))
-    elif task in {"实例分割"}:
-        metrics.append(PolyAPMetric(name="map", iou_thresholds=coco_thresholds, is_aux=False))
-        metrics.append(PolyAPMetric(name="ap_iou_0_5", iou_thresholds=[0.5], is_aux=True))
-        metrics.append(PolyAPMetric(name="ap_iou_0_75", iou_thresholds=[0.75], is_aux=True))
+    # 语义分割 / 实例分割 / 变化检测：点级 + 数量 + 集合级匹配
+    if task in {"语义分割", "变化检测", "实例分割"}:
+        # 点集合指标（原有逻辑）
+        metrics.append(PointSetPrecision(name="point_precision", is_aux=True))
+        metrics.append(PointSetRecall(name="point_recall", is_aux=True))
+        metrics.append(PointSetF1(name="point_f1", is_aux=False))
         metrics.append(CountAccuracy(name="count_acc", is_aux=True))
         metrics.append(CountMAE(name="count_mae", is_aux=True))
+        # 集合级匹配指标（新增，可按需调整 IoU 阈值）
+        metrics.append(PolyMatchPrecision(name="poly_precision", iou_thresh=0.5, is_aux=True))
+        metrics.append(PolyMatchRecall(name="poly_recall", iou_thresh=0.5, is_aux=True))
+        metrics.append(PolyMatchF1(name="poly_f1", iou_thresh=0.5, is_aux=False))
 
     return MetricCollection(metrics)

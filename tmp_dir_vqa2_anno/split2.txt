@@ -1,3 +1,0 @@
-{"prompt": "How many trees are there?", "frames": ["dummy_frame_4"], "gt": "10", "task": "VQA2", "source": "img4"}
-{"prompt": "How many ships are visible?", "frames": ["dummy_frame_5"], "gt": "2", "task": "VQA2", "source": "img5"}
-{"prompt": "How many bridges are there?", "frames": ["dummy_frame_6"], "gt": "1", "task": "VQA2", "source": "img6"}

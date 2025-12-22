@@ -1,0 +1,94 @@
+{
+  "metrics": {
+    "accuracy": 0.0
+  },
+  "stats": {
+    "num_anno_valid": 11,
+    "num_anno_invalid": 0,
+    "num_model_valid": 11,
+    "num_model_invalid": 0,
+    "num_paired": 11,
+    "num_files_total": 11,
+    "num_files_evaluated": 11,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "0000002_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000002.png",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "0000012_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000012.jpg",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "0000023_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000023.jpg",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "0000028_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000028.jpg",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "0000045_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000045.jpg",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "0000052_2__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000052.png",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "0000083__0",
+      "source": "/disk1/lyw/home/lzm/VQA/SARDet100K_image/val/0000083.jpg",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "USA_WashingtonDC_484_1__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/SARimages/",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "USA_WashingtonDC_498__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/SARimages/",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "USA_WashingtonDC_69__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/SARimages/",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    },
+    {
+      "sample_id": "USA_WashingtonDC_74_1__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/SARimages/",
+      "metrics": {
+        "accuracy": 0.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "metrics": {
+    "accuracy": 0.0,
+    "macro_f1": 0.01,
+    "macro_recall": 0.06
+  },
+  "stats": {
+    "num_anno_valid": 8,
+    "num_anno_invalid": 0,
+    "num_model_valid": 8,
+    "num_model_invalid": 0,
+    "num_paired": 8,
+    "num_files_total": 8,
+    "num_files_evaluated": 8,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "0000007_1__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000007.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0000007_9__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000007.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0000015__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000015.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0000027_2__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000027.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0000090__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/val/0000090.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0000091_22__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0000091.bmp",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.11,
+        "macro_recall": 1.0
+      }
+    },
+    {
+      "sample_id": "0116484__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0116484.png",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    },
+    {
+      "sample_id": "0116549_17__0",
+      "source": "SARLANG-1M, /disk1/lyw/home/lzm/VQA/SARDet100K_image/train/0116549.jpg",
+      "metrics": {
+        "accuracy": 0.0,
+        "macro_f1": 0.0,
+        "macro_recall": 0.0
+      }
+    }
+  ]
+}

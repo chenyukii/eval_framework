@@ -1,9 +1,0 @@
-{
-  "task": "VQA1",
-  "annotation_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\raw_anno\\VQA1",
-  "model_output_dir": "C:\\Users\\liu'j's\\Desktop\\damoxing\\20251013\\datasetpromptset\\AAeval\\data_preparation\\model_output\\VQA1",
-  "pattern": "*.txt",
-  "recursive": false,
-  "calc_aux_metric": true,
-  "output_json": "vqa1_dir_result.json"
-}

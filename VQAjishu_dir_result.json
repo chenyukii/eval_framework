@@ -1,0 +1,74 @@
+{
+  "metrics": {
+    "accuracy": 0.57,
+    "abs_error": 1.14
+  },
+  "stats": {
+    "num_anno_valid": 7,
+    "num_anno_invalid": 0,
+    "num_model_valid": 7,
+    "num_model_invalid": 0,
+    "num_paired": 7,
+    "num_files_total": 7,
+    "num_files_evaluated": 7,
+    "num_files_missing_model": 0
+  },
+  "details": [
+    {
+      "sample_id": "0000044__0",
+      "source": "SARLANG_1M, E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\train",
+      "metrics": {
+        "accuracy": 0.0,
+        "abs_error": 4.0
+      }
+    },
+    {
+      "sample_id": "0000311__0",
+      "source": "SARLANG_1M, E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\train",
+      "metrics": {
+        "accuracy": 1.0,
+        "abs_error": 0.0
+      }
+    },
+    {
+      "sample_id": "0002425__0",
+      "source": "SARLANG_1M, E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\train",
+      "metrics": {
+        "accuracy": 1.0,
+        "abs_error": 0.0
+      }
+    },
+    {
+      "sample_id": "0002427__0",
+      "source": "SARLANG_1M, E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\train",
+      "metrics": {
+        "accuracy": 1.0,
+        "abs_error": 0.0
+      }
+    },
+    {
+      "sample_id": "0002475__0",
+      "source": "SARLANG_1M, E:\\yaogan\\pythonProject\\SARdataset\\mubiaojishu\\SARLANG-1M\\SARDet-100K\\Images\\train",
+      "metrics": {
+        "accuracy": 1.0,
+        "abs_error": 0.0
+      }
+    },
+    {
+      "sample_id": "USA_WashingtonDC_101__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 0.0,
+        "abs_error": 1.0
+      }
+    },
+    {
+      "sample_id": "USA_WashingtonDC_163__0",
+      "source": "SARLANG_1M, /disk1/lyw/home/lzm/VQA/SARLANG_images/",
+      "metrics": {
+        "accuracy": 0.0,
+        "abs_error": 3.0
+      }
+    }
+  ]
+}

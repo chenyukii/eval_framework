@@ -1,4 +1,0 @@
-[
-    {"sample_id": "3", "task": "VQA1", "model_output": "No", "source": "test_image3.jpg"},
-    {"sample_id": "4", "task": "VQA2", "model_output": "5", "source": "test_image4.jpg"}
-]
